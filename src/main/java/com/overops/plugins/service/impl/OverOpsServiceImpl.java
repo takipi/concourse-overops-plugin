@@ -1,5 +1,6 @@
 package com.overops.plugins.service.impl;
 
+import com.overops.plugins.Context;
 import com.overops.plugins.model.QueryOverOps;
 import com.overops.plugins.service.OverOpsService;
 import com.overops.plugins.utils.StringUtils;
@@ -8,6 +9,7 @@ import com.takipi.api.client.data.view.SummarizedView;
 import com.takipi.api.client.observe.Observer;
 import com.takipi.api.client.util.regression.RegressionInput;
 import com.takipi.api.client.util.view.ViewUtil;
+import org.fusesource.jansi.Ansi;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -20,6 +22,11 @@ import java.util.regex.Pattern;
 public class OverOpsServiceImpl implements OverOpsService {
     private static final String SEPERATOR = ",";
     private boolean runRegressions = false;
+    private Context context;
+
+    public OverOpsServiceImpl(Context context) {
+        this.context = context;
+    }
 
     @Override
     public ReportBuilder.QualityReport perform(QueryOverOps queryOverOps) throws IOException, InterruptedException {
@@ -47,7 +54,7 @@ public class OverOpsServiceImpl implements OverOpsService {
 
         if (Objects.isNull(allEventsView)) {
             if(Objects.nonNull(printStream)) {
-                printStream.println("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
+                context.getOutputStream().error("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
             }
             throw new IllegalStateException(
                     "Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
@@ -61,15 +68,15 @@ public class OverOpsServiceImpl implements OverOpsService {
     }
 
     //sleep for 60 seconds to ensure all data is in OverOps
-    private static void pauseForTheCause(PrintStream printStream) {
+    private void pauseForTheCause(PrintStream printStream) {
         if (Objects.nonNull(printStream)) {
-            printStream.println("Build Step: Starting OverOps Quality Gate....");
+            context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
         }
         try {
             Thread.sleep(30000);
         } catch (Exception e) {
             if (Objects.nonNull(printStream)) {
-                printStream.println("Can not hold the process.");
+                context.getOutputStream().error("Can not hold the process.");
             }
         }
     }
@@ -87,18 +94,16 @@ public class OverOpsServiceImpl implements OverOpsService {
         }
 
         //validate active and baseline time window
-        if (queryOverOps.getCheckRegressionErrors()) {
-            if (!"0".equalsIgnoreCase(queryOverOps.getActiveTimespan())) {
-                if (convertToMinutes(queryOverOps.getActiveTimespan()) == 0) {
-                    printStream.println("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
-                    throw new IllegalArgumentException("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
-                }
+        if (!"0".equalsIgnoreCase(queryOverOps.getActiveTimespan())) {
+            if (convertToMinutes(queryOverOps.getActiveTimespan()) == 0) {
+                context.getOutputStream().error("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
+                throw new IllegalArgumentException("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
             }
-            if (!"0".equalsIgnoreCase(queryOverOps.getBaselineTimespan())) {
-                if (convertToMinutes(queryOverOps.getBaselineTimespan()) == 0) {
-                    printStream.println("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverOps.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
-                    throw new IllegalArgumentException("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverOps.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
-                }
+        }
+        if (!"0".equalsIgnoreCase(queryOverOps.getBaselineTimespan())) {
+            if (convertToMinutes(queryOverOps.getBaselineTimespan()) == 0) {
+                context.getOutputStream().error("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverOps.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
+                throw new IllegalArgumentException("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverOps.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
             }
         }
 

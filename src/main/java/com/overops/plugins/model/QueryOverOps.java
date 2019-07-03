@@ -11,23 +11,22 @@ public class QueryOverOps {
     private String deploymentName;
     private String serviceId;
     private String regexFilter;
-    private boolean markUnstable;
-    private Integer printTopIssues;
-    private boolean newEvents;
-    private boolean resurfacedErrors;
-    private Integer maxErrorVolume;
-    private Integer maxUniqueErrors;
+    private boolean markUnstable = false;
+    private Integer printTopIssues = 5;
+    private boolean newEvents = false;
+    private boolean resurfacedErrors = false;
+    private Integer maxErrorVolume = 0;
+    private Integer maxUniqueErrors = 0;
     private String criticalExceptionTypes;
-    private boolean checkRegressionErrors;
-    private String activeTimespan;
-    private String baselineTimespan;
-    private Integer minVolumeThreshold;
-    private Double minErrorRateThreshold;
-    private Double regressionDelta;
-    private Double criticalRegressionDelta;
-    private boolean applySeasonality;
+    private String activeTimespan = "0";
+    private String baselineTimespan = "0";
+    private Integer minVolumeThreshold = 0;
+    private Double minErrorRateThreshold = 0d;
+    private Double regressionDelta = 0d;
+    private Double criticalRegressionDelta = 0d;
+    private boolean applySeasonality = false;
 
-    private boolean debug;
+    private boolean debug = false;
 
     public String getOverOpsURL() {
         return overOpsURL;
@@ -141,14 +140,6 @@ public class QueryOverOps {
         this.criticalExceptionTypes = criticalExceptionTypes;
     }
 
-    public Boolean getCheckRegressionErrors() {
-        return checkRegressionErrors;
-    }
-
-    public void setCheckRegressionErrors(Boolean checkRegressionErrors) {
-        this.checkRegressionErrors = checkRegressionErrors;
-    }
-
     public String getActiveTimespan() {
         return activeTimespan;
     }
@@ -224,31 +215,18 @@ public class QueryOverOps {
         queryOverOps.regexFilter = params.getOrDefault("regexFilter", "");
         queryOverOps.markUnstable = Boolean.parseBoolean(params.getOrDefault("markUnstable", "false"));
         queryOverOps.printTopIssues = Integer.parseInt(params.getOrDefault("printTopIssues", "5"));
-        if (Boolean.parseBoolean(params.getOrDefault("checkNewErrors", "false"))) {
-            queryOverOps.newEvents = Boolean.parseBoolean(params.getOrDefault("newEvents", "false"));
-        }
-        if (Boolean.parseBoolean(params.getOrDefault("checkResurfacedErrors", "false"))) {
-            queryOverOps.resurfacedErrors = Boolean.parseBoolean(params.getOrDefault("resurfacedErrors", "false"));
-        }
-        if (Boolean.parseBoolean(params.getOrDefault("checkVolumeErrors", "false"))) {
-            queryOverOps.maxErrorVolume = Integer.parseInt(params.getOrDefault("maxErrorVolume", "0"));
-        }
-        if (Boolean.parseBoolean(params.getOrDefault("checkUniqueErrors", "false"))) {
-            queryOverOps.maxUniqueErrors = Integer.parseInt(params.getOrDefault("maxUniqueErrors", "0"));
-        }
-        if (Boolean.parseBoolean(params.getOrDefault("checkCriticalErrors", "false"))) {
-            queryOverOps.criticalExceptionTypes = params.getOrDefault("criticalExceptionTypes", "");
-        }
-        queryOverOps.setCheckRegressionErrors(Boolean.parseBoolean(params.getOrDefault("checkRegressionErrors", "false")));
-        if (queryOverOps.getCheckRegressionErrors()) {
-            queryOverOps.activeTimespan = params.getOrDefault("activeTimespan", "0");
-            queryOverOps.baselineTimespan = params.getOrDefault("baselineTimespan", "0");
-            queryOverOps.minVolumeThreshold = Integer.parseInt(params.getOrDefault("minVolumeThreshold", "0"));
-            queryOverOps.minErrorRateThreshold = Double.parseDouble(params.getOrDefault("minErrorRateThreshold", "0"));
-            queryOverOps.regressionDelta = Double.parseDouble(params.getOrDefault("regressionDelta", "0"));
-            queryOverOps.criticalRegressionDelta = Double.parseDouble(params.getOrDefault("criticalRegressionDelta", "0"));
-            queryOverOps.applySeasonality = Boolean.parseBoolean(params.getOrDefault("applySeasonality", "false"));
-        }
+        queryOverOps.newEvents = Boolean.parseBoolean(params.getOrDefault("newEvents", "false"));
+        queryOverOps.resurfacedErrors = Boolean.parseBoolean(params.getOrDefault("resurfacedErrors", "false"));
+        queryOverOps.maxErrorVolume = Integer.parseInt(params.getOrDefault("maxErrorVolume", "0"));
+        queryOverOps.maxUniqueErrors = Integer.parseInt(params.getOrDefault("maxUniqueErrors", "0"));
+        queryOverOps.criticalExceptionTypes = params.getOrDefault("criticalExceptionTypes", "");
+        queryOverOps.activeTimespan = params.getOrDefault("activeTimespan", "0");
+        queryOverOps.baselineTimespan = params.getOrDefault("baselineTimespan", "0");
+        queryOverOps.minVolumeThreshold = Integer.parseInt(params.getOrDefault("minVolumeThreshold", "0"));
+        queryOverOps.minErrorRateThreshold = Double.parseDouble(params.getOrDefault("minErrorRateThreshold", "0"));
+        queryOverOps.regressionDelta = Double.parseDouble(params.getOrDefault("regressionDelta", "0"));
+        queryOverOps.criticalRegressionDelta = Double.parseDouble(params.getOrDefault("criticalRegressionDelta", "0"));
+        queryOverOps.applySeasonality = Boolean.parseBoolean(params.getOrDefault("applySeasonality", "false"));
         queryOverOps.debug = Boolean.parseBoolean(params.getOrDefault("debug", "false"));
         return queryOverOps;
     }

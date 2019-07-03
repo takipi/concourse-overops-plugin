@@ -19,7 +19,7 @@ public class PreparationStep extends Step<String[], QueryOverOps> {
 
     @Override
     public QueryOverOps run(String[] args) {
-        context.getOutputStream().println("OverOps [Step 1/3]: Preparation data...", Ansi.Color.YELLOW);
+        context.getOutputStream().println("OverOps [Step 1/3]: Preparation data...", Ansi.Color.MAGENTA);
         QueryOverOps query = QueryOverOps.mapToObject(firstStep(args));
         validation(query);
         return query;

@@ -23,6 +23,17 @@ public class RenderService extends Render {
     }
 
     @Override
+    public boolean isStable() {
+        boolean stable;
+        if(getMarkedUnstable() && getUnstable()) {
+            stable = false;
+        } else {
+            stable = true;
+        }
+        return stable;
+    }
+
+    @Override
     public void render() {
         if(getMarkedUnstable() && getUnstable()) {
             this.context.getOutputStream().error(getSummary());
@@ -35,54 +46,50 @@ public class RenderService extends Render {
         }
 
         if (getCheckNewEvents() && getPassedNewErrorGate()) {
-            this.context.getOutputStream().block(getNewErrorSummary(), Ansi.Color.GREEN);
-            this.context.getOutputStream().block("Nothing to report", Ansi.Color.BLUE);
+            this.context.getOutputStream().block(Ansi.Color.GREEN, getNewErrorSummary(), "Nothing to report");
         } else if (getCheckNewEvents() && !getPassedNewErrorGate()) {
-            this.context.getOutputStream().block(getNewErrorSummary(), Ansi.Color.RED);
+            this.context.getOutputStream().block(getNewErrorSummary(), Ansi.Color.RED, false);
             this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getNewEvents());
         }
 
         if (getCheckResurfacedEvents() && getPassedResurfacedErrorGate()) {
-            this.context.getOutputStream().block(getResurfacedErrorSummary(), Ansi.Color.GREEN);
-            this.context.getOutputStream().block("Nothing to report", Ansi.Color.BLUE);
+            this.context.getOutputStream().block(Ansi.Color.GREEN, getResurfacedErrorSummary(), "Nothing to report");
         } else if (getCheckResurfacedEvents() && !getCheckResurfacedEvents()) {
-            this.context.getOutputStream().block(getResurfacedErrorSummary(), Ansi.Color.RED);
+            this.context.getOutputStream().block(getResurfacedErrorSummary(), Ansi.Color.RED, false);
             this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getResurfacedEvents());
         }
 
         if (getCheckTotalErrors() || getCheckUniqueErrors()) {
             if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
-                this.context.getOutputStream().block(getTotalErrorSummary(), Ansi.Color.GREEN);
+                this.context.getOutputStream().block(getTotalErrorSummary(), Ansi.Color.GREEN, false);
             } else if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
-                this.context.getOutputStream().block(getTotalErrorSummary(), Ansi.Color.RED);
+                this.context.getOutputStream().block(getTotalErrorSummary(), Ansi.Color.RED, false);
             }
 
             if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
-                this.context.getOutputStream().block(getUniqueErrorSummary(), Ansi.Color.GREEN);
+                this.context.getOutputStream().block(getUniqueErrorSummary(), Ansi.Color.GREEN, false);
             } else if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
-                this.context.getOutputStream().block(getUniqueErrorSummary(), Ansi.Color.RED);
+                this.context.getOutputStream().block(getUniqueErrorSummary(), Ansi.Color.RED, false);
             }
 
             if (getHasTopErrors()) {
                 this.context.getOutputStream().table(Arrays.asList("Top Events Affecting Unique/Total Error Gates", "Application(s)", "Introduced by", "Volume"), getTopEvents());
             } else {
-                this.context.getOutputStream().block("Nothing to report", Ansi.Color.BLUE);
+                this.context.getOutputStream().block("Nothing to report", Ansi.Color.BLUE, true);
             }
         }
 
         if (getCheckCriticalErrors() && getPassedCriticalErrorGate()) {
-            this.context.getOutputStream().block(getCriticalErrorSummary(), Ansi.Color.GREEN);
-            this.context.getOutputStream().block("Nothing to report", Ansi.Color.BLUE);
+            this.context.getOutputStream().block(Ansi.Color.GREEN, getCriticalErrorSummary(), "Nothing to report");
         } else if (getCheckCriticalErrors() && !getPassedCriticalErrorGate()) {
-            this.context.getOutputStream().block(getCriticalErrorSummary(), Ansi.Color.RED);
+            this.context.getOutputStream().block(getCriticalErrorSummary(), Ansi.Color.RED, false);
             this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getCriticalEvents());
         }
 
         if (getCheckRegressedErrors() && getPassedRegressedEvents()) {
-            this.context.getOutputStream().block(getRegressionSumarry(), Ansi.Color.GREEN);
-            this.context.getOutputStream().block("Nothing to report", Ansi.Color.BLUE);
+            this.context.getOutputStream().block(Ansi.Color.GREEN, getRegressionSumarry(), "Nothing to report");
         } else if (getCheckRegressedErrors() && !getPassedRegressedEvents()) {
-            this.context.getOutputStream().block(getRegressionSumarry(), Ansi.Color.RED);
+            this.context.getOutputStream().block(getRegressionSumarry(), Ansi.Color.RED, false);
             this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getRegressedEvents());
         }
     }
@@ -98,10 +105,10 @@ public class RenderService extends Render {
     private String getSummary() {
         if (getUnstable() && getMarkedUnstable()) {
             //the build is unstable when marking the build as unstable
-            return "OverOps has marked build "+ getDeploymentName() + "  as unstable because the below quality gate(s) were not met.";
+            return "OverOps has marked build "+ getDeploymentName() + " as unstable because the below quality gate(s) were not met.";
         } else if (!getMarkedUnstable() && getUnstable()) {
             //unstable build stable when NOT marking the build as unstable
-            return "OverOps has detected issues with build "+ getDeploymentName() + "  but did not mark the build as unstable.";
+            return "OverOps has detected issues with build "+ getDeploymentName() + " but did not mark the build as unstable.";
         } else {
             //stable build when marking the build as unstable
             return "Congratulations, build " + getDeploymentName() + " has passed all quality gates!";

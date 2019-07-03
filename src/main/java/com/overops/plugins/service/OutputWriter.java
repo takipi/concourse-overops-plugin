@@ -17,7 +17,9 @@ public interface OutputWriter {
 
     void println(String s, Ansi.Color color);
 
-    void block(String s, Ansi.Color color);
+    void block(Ansi.Color color, String... s);
+
+    void block(String s, Ansi.Color color, boolean closeLine);
 
     void table(List<String> headers, List<OOReportEvent> body);
 }

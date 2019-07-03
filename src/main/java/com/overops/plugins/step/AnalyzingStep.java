@@ -20,7 +20,7 @@ public class AnalyzingStep extends Step<QueryOverOps, ReportBuilder.QualityRepor
 
     @Override
     public ReportBuilder.QualityReport run(QueryOverOps inputParams) throws IOException, InterruptedException {
-        context.getOutputStream().println("OverOps [Step 2/3]: Analyzing data...", Ansi.Color.YELLOW);
+        context.getOutputStream().println("OverOps [Step 2/3]: Analyzing data...", Ansi.Color.MAGENTA);
         return overOpsService.perform(inputParams);
     }
 }
