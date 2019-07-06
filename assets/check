@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euf -o pipefail
+
+jq -n '[{version: "test"}]'
