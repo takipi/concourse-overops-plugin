@@ -4,5 +4,6 @@ RUN mvn package
 
 FROM openjdk:8-jre-slim
 RUN apt update && apt install -y jq
-COPY /assets/ /opt/resource/
+ENV CONCOURSE_RESOURCES=/opt/resource/
 COPY --from=mvn target/concourse-overops.jar /artifact/concourse-overops.jar
+COPY /assets/ ${CONCOURSE_RESOURCES}/

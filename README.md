@@ -14,21 +14,22 @@ resources:
 - name: overops-check
   type: overops-resource
   source:
-    overOpsURL: https://api.overops.com 
+    overOpsURL: https://api.overops.com
     overOpsSID: S111111
     overOpsAPIKey: ((overOpsAPIKey))
-    applicationName: MyApp
-    deploymentName: MyDeployment
+    applicationName: App1
+    deploymentName: Dep1
+    markUnstable: false
+    activeTimespan: 2d
+    baselineTimespan: 14d
+    newEvents: true
+    resurfacedErrors: true
+    debug: false
 
 jobs:
 - name: test
   plan:
   - get: overops-check
     params:
-      markUnstable: true
-      activeTimespan: 1d
-      baselineTimespan: 7d
-      newEvents: true
-      resurfacedErrors: true
-      debug: true
+      debug: true       # override source "debug" setting
 ```

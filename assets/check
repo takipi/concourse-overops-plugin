@@ -1,4 +1,9 @@
 #!/bin/bash
-set -euf -o pipefail
+set -e # exit on error
 
-jq -n '[{version: "test"}]'
+# run in the "check" mode
+OVEROPS_CHECK=true
+
+source $CONCOURSE_RESOURCES/shared
+
+$cmd
