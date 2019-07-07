@@ -2,6 +2,7 @@ package com.overops.plugins.service.impl;
 
 import com.google.gson.Gson;
 import com.overops.plugins.model.Event;
+import com.overops.plugins.model.Metadata;
 import com.overops.plugins.model.OOReportRegressedEvent;
 import com.overops.plugins.model.Version;
 import com.takipi.api.client.ApiClient;
@@ -163,19 +164,25 @@ public class ReportBuilder {
 		}
 
 		public Version getMaxVersion() {
-			long max = 0;
+			Version version = null;
 			if (Objects.nonNull(getNewIssues()) && getNewIssues().size() > 0) {
-				max = getNewIssues().stream().filter(e -> Objects.nonNull(e.getEvent())).map(e -> e.getEvent().id)
-						.filter(Objects::nonNull).map(Long::parseLong).mapToLong(v -> v)
-						.max().orElse(0);
+				version = getNewIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
+						.max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createVersion).orElse(new Version());
 			}
 
-			if (max == 0 || (Objects.nonNull(getAllIssues()) && getAllIssues().size() > 0)) {
-				max = getAllIssues().stream().filter(e -> Objects.nonNull(e.getEvent())).map(e -> e.getEvent().id)
-						.filter(Objects::nonNull).map(Long::parseLong).mapToLong(v -> v)
-						.max().orElse(0);
+			if (Objects.isNull(version) && (Objects.nonNull(getAllIssues()) && getAllIssues().size() > 0)) {
+				version = getAllIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
+						.max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createVersion).orElse(new Version());
 			}
-			return new Version(new Event(String.valueOf(max)));
+			return version;
+		}
+
+		private Version createVersion(EventResult e) {
+			Version v = new Version(new Event(e.id));
+			v.addMetadata(new Metadata("type", e.type));
+			v.addMetadata(new Metadata("summary", e.summary));
+			v.addMetadata(new Metadata("name", e.name));
+			return v;
 		}
 	}
 	
