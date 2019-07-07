@@ -1,7 +1,9 @@
 package com.overops.plugins.service.impl;
 
 import com.google.gson.Gson;
+import com.overops.plugins.model.Event;
 import com.overops.plugins.model.OOReportRegressedEvent;
+import com.overops.plugins.model.Version;
 import com.takipi.api.client.ApiClient;
 import com.takipi.api.client.result.event.EventResult;
 import com.takipi.api.client.util.cicd.OOReportEvent;
@@ -158,6 +160,22 @@ public class ReportBuilder {
 			value = value.replace("[", "");
 			value = value.replace("]", "");
 			return value;
+		}
+
+		public Version getMaxVersion() {
+			long max = 0;
+			if (Objects.nonNull(getNewIssues()) && getNewIssues().size() > 0) {
+				max = getNewIssues().stream().filter(e -> Objects.nonNull(e.getEvent())).map(e -> e.getEvent().id)
+						.filter(Objects::nonNull).map(Long::parseLong).mapToLong(v -> v)
+						.max().orElse(0);
+			}
+
+			if (max == 0 || (Objects.nonNull(getAllIssues()) && getAllIssues().size() > 0)) {
+				max = getAllIssues().stream().filter(e -> Objects.nonNull(e.getEvent())).map(e -> e.getEvent().id)
+						.filter(Objects::nonNull).map(Long::parseLong).mapToLong(v -> v)
+						.max().orElse(0);
+			}
+			return new Version(new Event(String.valueOf(max)));
 		}
 	}
 	

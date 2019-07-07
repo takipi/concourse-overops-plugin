@@ -1,23 +1,30 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
+import com.overops.plugins.model.Event;
 import com.overops.plugins.model.QueryOverOps;
+import com.overops.plugins.model.Versions;
 import com.overops.plugins.service.OverOpsService;
 import com.overops.plugins.utils.StringUtils;
+import com.takipi.api.client.ApiClient;
 import com.takipi.api.client.RemoteApiClient;
 import com.takipi.api.client.data.view.SummarizedView;
 import com.takipi.api.client.observe.Observer;
+import com.takipi.api.client.result.event.EventResult;
+import com.takipi.api.client.util.regression.DeploymentsTimespan;
 import com.takipi.api.client.util.regression.RegressionInput;
+import com.takipi.api.client.util.regression.RegressionUtil;
 import com.takipi.api.client.util.view.ViewUtil;
+import com.takipi.common.util.CollectionUtil;
+import com.takipi.common.util.Pair;
 import org.fusesource.jansi.Ansi;
+import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class OverOpsServiceImpl implements OverOpsService {
     private static final String SEPERATOR = ",";
@@ -40,7 +47,9 @@ public class OverOpsServiceImpl implements OverOpsService {
             printStream = null;
         }
 
-        pauseForTheCause(printStream);
+        if (Objects.nonNull(printStream)) {
+            context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
+        }
 
         validateInputs(queryOverOps, printStream);
 
@@ -67,18 +76,49 @@ public class OverOpsServiceImpl implements OverOpsService {
 
     }
 
-    //sleep for 60 seconds to ensure all data is in OverOps
-    private void pauseForTheCause(PrintStream printStream) {
+    @Override
+    public Versions check(QueryOverOps queryOverOps) throws IOException, InterruptedException {
+        PrintStream printStream;
+        if (convertToMinutes(queryOverOps.getBaselineTimespan()) > 0) {
+            runRegressions = true;
+        }
+        if (queryOverOps.isDebug()) {
+            printStream = System.err;
+        } else {
+            printStream = null;
+        }
+
         if (Objects.nonNull(printStream)) {
             context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
         }
-        try {
-            Thread.sleep(30000);
-        } catch (Exception e) {
-            if (Objects.nonNull(printStream)) {
-                context.getOutputStream().error("Can not hold the process.");
-            }
+
+        validateInputs(queryOverOps, printStream);
+
+        RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder().setHostname(queryOverOps.getOverOpsURL()).setApiKey(queryOverOps.getOverOpsAPIKey()).build();
+
+        if (Objects.nonNull(printStream) && (queryOverOps.isDebug())) {
+            apiClient.addObserver(new ApiClientObserver(printStream, queryOverOps.isDebug()));
         }
+
+        SummarizedView allEventsView = ViewUtil.getServiceViewByName(apiClient, queryOverOps.getOverOpsSID().toUpperCase(), "All Events");
+
+        if (Objects.isNull(allEventsView)) {
+            if(Objects.nonNull(printStream)) {
+                context.getOutputStream().error("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
+            }
+            throw new IllegalStateException(
+                    "Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
+        }
+
+        RegressionInput input = setupRegressionData(queryOverOps, allEventsView, printStream);
+        DeploymentsTimespan deploymentsTimespan = RegressionUtil.getDeploymentsTimespan(apiClient, input.serviceId, input.deployments);
+        Versions version = new Versions();
+        if (deploymentsTimespan != null && deploymentsTimespan.getActiveWindow() != null && deploymentsTimespan.getActiveWindow().getFirst() != null) {
+            Pair<DateTime, DateTime> deploymentsActiveWindow = deploymentsTimespan.getActiveWindow();
+            DateTime deploymentStart = (DateTime)deploymentsActiveWindow.getFirst();
+            version.setVersion(getEvents(apiClient, input, deploymentStart, printStream).stream().map(e -> new Event(e.id)).collect(Collectors.toList()));
+        }
+        return version;
     }
 
     private void validateInputs (QueryOverOps queryOverOps, PrintStream printStream) {
@@ -218,5 +258,29 @@ public class OverOpsServiceImpl implements OverOpsService {
 
             printStream.println(output.toString());
         }
+    }
+
+    private Collection<EventResult> getEvents(ApiClient apiClient, RegressionInput input, DateTime deploymentStart, PrintStream printStream) {
+        Collection<EventResult> events = RegressionUtil.getActiveEventVolume(apiClient, input, deploymentStart, printStream);
+        if (!CollectionUtil.safeIsEmpty(events)) {
+            return events;
+        } else {
+            events = RegressionUtil.getActiveEventVolume(apiClient, input, deploymentStart, printStream, true);
+            return (Collection)(CollectionUtil.safeIsEmpty(events) ? events : filterByLabel(events, input));
+        }
+    }
+
+    private List<EventResult> filterByLabel(Collection<EventResult> inputEvents, RegressionInput input) {
+        List<String> list = (List)input.applictations;
+        String appName = (String)list.get(0) + ".app";
+        List<EventResult> result = new ArrayList();
+
+        for (EventResult eventResult : inputEvents) {
+            if (eventResult.labels != null && eventResult.labels.contains(appName)) {
+                result.add(eventResult);
+            }
+        }
+
+        return result;
     }
 }
