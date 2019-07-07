@@ -55,7 +55,7 @@ public class AnsiWriter implements OutputWriter {
             at.addRow(item);
         });
         at.addRule();
-        printStream.println(at.render(170));
+        printStream.println(at.render(140));
     }
 
     @Override
@@ -66,7 +66,7 @@ public class AnsiWriter implements OutputWriter {
         if (closeLine)  {
             at.addRule();
         }
-        printStream.println(at.render(170));
+        printStream.println(at.render(140));
     }
 
     @Override
@@ -80,8 +80,8 @@ public class AnsiWriter implements OutputWriter {
             at.addRow(item.getARCLink(), "", "", "");
             at.addRule();
         });
-        at.getRenderer().setCWC(new CWC_FixedWidth().add(125).add(15).add(15).add(10));
-        printStream.println(at.render(165));
+        at.getRenderer().setCWC(new CWC_FixedWidth().add(95).add(15).add(15).add(10));
+        printStream.println(at.render(135));
     }
 
 }
