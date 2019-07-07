@@ -35,7 +35,7 @@ public class OverOpsServiceImpl implements OverOpsService {
             runRegressions = true;
         }
         if (queryOverOps.isDebug()) {
-            printStream = System.out;
+            printStream = System.err;
         } else {
             printStream = null;
         }

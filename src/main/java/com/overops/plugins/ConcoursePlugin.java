@@ -21,7 +21,7 @@ public class ConcoursePlugin {
 
     private ConcoursePlugin(String[] args) {
         boolean status;
-        context = Context.getBuilder().setOutpitStream(new AnsiWriter(System.out)).build();
+        context = Context.getBuilder().setOutpitStream(new AnsiWriter(System.err)).build();
         try {
             Step<String[], QueryOverOps> prepStep = new PreparationStep(context);
             Step<QueryOverOps, ReportBuilder.QualityReport> analyzingStep = new AnalyzingStep(context, new OverOpsServiceImpl(context));

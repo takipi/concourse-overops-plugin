@@ -4,6 +4,7 @@ import com.overops.plugins.service.OutputWriter;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import de.vandermeer.asciitable.AsciiTable;
 import de.vandermeer.asciitable.CWC_FixedWidth;
+import de.vandermeer.skb.interfaces.translators.HtmlElementTranslator;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
@@ -54,7 +55,7 @@ public class AnsiWriter implements OutputWriter {
             at.addRow(item);
         });
         at.addRule();
-        printStream.println(at.render(250));
+        printStream.println(at.render(170));
     }
 
     @Override
@@ -65,7 +66,7 @@ public class AnsiWriter implements OutputWriter {
         if (closeLine)  {
             at.addRule();
         }
-        printStream.println(at.render(250));
+        printStream.println(at.render(170));
     }
 
     @Override
@@ -75,11 +76,12 @@ public class AnsiWriter implements OutputWriter {
         at.addRow(headers);
         at.addRule();
         body.forEach(item -> {
-            at.addRow(item.getEventSummary() + " (" + item.getARCLink() + ")", item.getApplications(), item.getIntroducedBy(), item.getHits());
+            at.addRow(item.getEventSummary(), item.getApplications(), item.getIntroducedBy(), item.getHits());
+            at.addRow(item.getARCLink(), "", "", "");
             at.addRule();
         });
-        at.getRenderer().setCWC(new CWC_FixedWidth().add(195).add(20).add(20).add(10));
-        printStream.println(at.render(250));
+        at.getRenderer().setCWC(new CWC_FixedWidth().add(125).add(15).add(15).add(10));
+        printStream.println(at.render(165));
     }
 
 }
