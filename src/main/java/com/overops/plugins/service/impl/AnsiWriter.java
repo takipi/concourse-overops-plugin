@@ -55,7 +55,7 @@ public class AnsiWriter implements OutputWriter {
             at.addRow(item);
         });
         at.addRule();
-        printStream.println(at.render(130));
+        printStream.println(at.render(145));
         printStream.println("\n");
     }
 
@@ -67,7 +67,7 @@ public class AnsiWriter implements OutputWriter {
         if (closeLine)  {
             at.addRule();
         }
-        printStream.println(at.render(130));
+        printStream.println(at.render(145));
     }
 
     @Override
@@ -76,18 +76,18 @@ public class AnsiWriter implements OutputWriter {
         at.addRule();
         at.addRow(headers);
         at.addRule();
-        at.getRenderer().setCWC(new CWC_FixedWidth().add(85).add(15).add(15).add(10));
-        printStream.println(at.render(125));
+        at.getRenderer().setCWC(new CWC_FixedWidth().add(100).add(15).add(15).add(10));
+        printStream.println(at.render(140));
         body.forEach(item -> {
             AsciiTable tbody = new AsciiTable();
             tbody.addRow(item.getEventSummary(), item.getApplications(), item.getIntroducedBy(), item.getHits());
             tbody.addRule();
-            tbody.getRenderer().setCWC(new CWC_FixedWidth().add(85).add(15).add(15).add(10));
-            printStream.println(tbody.render(125));
+            tbody.getRenderer().setCWC(new CWC_FixedWidth().add(100).add(15).add(15).add(10));
+            printStream.println(tbody.render(140));
             AsciiTable tbodyLink = new AsciiTable();
             tbodyLink.addRow(item.getARCLink());
             tbodyLink.addRule();
-            printStream.println(tbodyLink.render(130));
+            printStream.println(tbodyLink.render(145));
         });
         printStream.println("\n");
 
