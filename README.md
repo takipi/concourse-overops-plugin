@@ -32,7 +32,7 @@ for more details see example below.
 
 ## Configuration example
 
-```yml
+```yaml
 resource_types:
 - name: overops-resource
   type: docker-image

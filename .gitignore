@@ -24,7 +24,9 @@ hs_err_pid*
 .idea/*
 target/*
 */target/*
+bin/
 
 
 # VSC
 .settings
+.project
