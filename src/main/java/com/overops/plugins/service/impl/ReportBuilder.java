@@ -174,7 +174,8 @@ public class ReportBuilder {
 				version = getAllIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
 						.max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createVersion).orElse(new Version());
 			}
-			return version;
+
+			return Optional.ofNullable(version).orElse(new Version(new Event()));
 		}
 
 		private Version createVersion(EventResult e) {

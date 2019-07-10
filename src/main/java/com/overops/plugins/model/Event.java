@@ -1,5 +1,8 @@
 package com.overops.plugins.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Event {
 
     public Event() {
