@@ -116,8 +116,10 @@ public class OverOpsServiceImpl implements OverOpsService {
         if (deploymentsTimespan != null && deploymentsTimespan.getActiveWindow() != null && deploymentsTimespan.getActiveWindow().getFirst() != null) {
             Pair<DateTime, DateTime> deploymentsActiveWindow = deploymentsTimespan.getActiveWindow();
             DateTime deploymentStart = deploymentsActiveWindow.getFirst();
-            Optional.ofNullable(getEvents(apiClient, input, deploymentStart, printStream))
-                    .ifPresent(events -> version.setVersion(events.stream().map(e -> e.id).sorted().map(Event::new).collect(Collectors.toList())));
+
+            version.setVersion(Optional.ofNullable(getEvents(apiClient, input, deploymentStart, printStream))
+                    .map(events -> events.stream().map(e -> e.id).sorted().map(Event::new).collect(Collectors.toList()))
+                    .orElse(Collections.singletonList(new Event("NONE"))));
         }
         return version;
     }
