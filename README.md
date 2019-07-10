@@ -37,7 +37,7 @@ resource_types:
 - name: overops-resource
   type: docker-image
   source:
-    repository: <path_to_image> # TODO provide valid path
+    repository: overops/concourse-resource
     tag: latest
 
 resources:
