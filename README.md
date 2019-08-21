@@ -2,7 +2,7 @@
 
 ## Quick Set Up
 
-Assuming there is already an instance of Concourse up, the next step is to attatch the OverOps Resource to your existing pipeline. Configure the example ```overops-resource.yml``` and then run ```fly -t OO-example set-pipeline -c pipeline.yml -p oo-test``` to add it into your Build. Please replace the ```OO-example``` with your own name and make sure the configuration is the correct yml file.
+Assuming there is already an instance of Concourse up, the next step is to attatch the OverOps Resource to your existing pipeline. Configure the example ```overops-resource.yml``` and then run ```fly -t OO-example set-pipeline -c pipeline.yml -p oo-test``` to add it into your Build. Please replace the ```OO-example``` with your own names and make sure the configuration is the correct yml file.
 
 ## Configuration example
 
