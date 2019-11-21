@@ -18,6 +18,10 @@ public class Context {
         return Optional.ofNullable(objectMapper).orElse(new ObjectMapper());
     }
 
+    public void debugMode(boolean debug) {
+
+    }
+
     public static ContextBuilder getBuilder() {
         return new Context().new ContextBuilder();
     }

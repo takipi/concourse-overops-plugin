@@ -9,14 +9,16 @@ import com.overops.plugins.utils.StringUtils;
 import com.takipi.api.client.ApiClient;
 import com.takipi.api.client.RemoteApiClient;
 import com.takipi.api.client.data.view.SummarizedView;
+import com.takipi.api.client.functions.input.ReliabilityReportInput;
+import com.takipi.api.client.functions.output.ReliabilityReport;
 import com.takipi.api.client.observe.Observer;
 import com.takipi.api.client.result.event.EventResult;
-import com.takipi.api.client.util.regression.DeploymentsTimespan;
 import com.takipi.api.client.util.regression.RegressionInput;
 import com.takipi.api.client.util.regression.RegressionUtil;
 import com.takipi.api.client.util.view.ViewUtil;
 import com.takipi.common.util.CollectionUtil;
 import com.takipi.common.util.Pair;
+import com.takipi.common.util.TimeUtil;
 import org.fusesource.jansi.Ansi;
 import org.joda.time.DateTime;
 
@@ -46,34 +48,49 @@ public class OverOpsServiceImpl implements OverOpsService {
         } else {
             printStream = null;
         }
-
-        if (Objects.nonNull(printStream)) {
-            context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
-        }
+        context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
 
         validateInputs(queryOverOps, printStream);
 
-        RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder().setHostname(queryOverOps.getOverOpsURL()).setApiKey(queryOverOps.getOverOpsAPIKey()).build();
+        ApiClient apiClient = RemoteApiClient.newBuilder().setHostname(queryOverOps.getOverOpsURL()).setApiKey(queryOverOps.getOverOpsAPIKey()).build();
 
         if (Objects.nonNull(printStream) && (queryOverOps.isDebug())) {
-            apiClient.addObserver(new ApiClientObserver(printStream, queryOverOps.isDebug()));
+            apiClient.addObserver(new OverOpsServiceImpl.ApiClientObserver(printStream, queryOverOps.isDebug()));
         }
 
         SummarizedView allEventsView = ViewUtil.getServiceViewByName(apiClient, queryOverOps.getOverOpsSID().toUpperCase(), "All Events");
 
         if (Objects.isNull(allEventsView)) {
-            if(Objects.nonNull(printStream)) {
-                context.getOutputStream().error("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
-            }
+            context.getOutputStream().debug("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
             throw new IllegalStateException(
                     "Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
         }
 
-        RegressionInput input = setupRegressionData(queryOverOps, allEventsView, printStream);
-        return ReportBuilder.execute(apiClient, input, queryOverOps.getMaxErrorVolume(), queryOverOps.getMaxUniqueErrors(),
-                queryOverOps.getPrintTopIssues(), queryOverOps.getRegexFilter(), queryOverOps.isNewEvents(), queryOverOps.isResurfacedErrors(),
-                runRegressions, queryOverOps.isMarkUnstable(), printStream, queryOverOps.isDebug());
+        Pair<DateTime, DateTime> deploymentsTimespan = RegressionUtil.getDeploymentsActiveWindow(apiClient, queryOverOps.getServiceId(), Collections.singletonList(queryOverOps.getDeploymentName()));
+        if ((deploymentsTimespan == null) ||
+                (deploymentsTimespan.getFirst() == null)) {
+            context.getOutputStream().debug("Deployments " + queryOverOps.getDeploymentName()
+                    + " not found. Please ensure your collector and Jenkins configuration are pointing to the same environment.");
+            throw new IllegalStateException("Deployments " + queryOverOps.getDeploymentName()
+                    + " not found. Please ensure your collector and Jenkins configuration are pointing to the same environment.");
+        }
 
+        queryOverOps.setPeriod(DateTime.now().getMillis() - deploymentsTimespan.getFirst().getMillis());
+
+        ReliabilityReportInput input = setupReliabilityData(queryOverOps, allEventsView, printStream);
+
+        ReliabilityReport reliabilityReport = ReliabilityReport.execute(apiClient, input);
+        if (reliabilityReport == null) {
+            context.getOutputStream().debug("Failed getting report");
+            throw new IllegalStateException("Failed getting report");
+        }
+
+        if (CollectionUtil.safeIsEmpty(reliabilityReport.items)) {
+            context.getOutputStream().debug("Missing data");
+            throw new IllegalStateException("Missing data");
+        }
+
+        return ReportBuilder.execute(apiClient, queryOverOps, reliabilityReport, input, deploymentsTimespan.getFirst(), runRegressions, printStream);
     }
 
     @Override
@@ -88,10 +105,6 @@ public class OverOpsServiceImpl implements OverOpsService {
             printStream = null;
         }
 
-        if (Objects.nonNull(printStream)) {
-            context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
-        }
-
         validateInputs(queryOverOps, printStream);
 
         RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder().setHostname(queryOverOps.getOverOpsURL()).setApiKey(queryOverOps.getOverOpsAPIKey()).build();
@@ -103,20 +116,16 @@ public class OverOpsServiceImpl implements OverOpsService {
         SummarizedView allEventsView = ViewUtil.getServiceViewByName(apiClient, queryOverOps.getOverOpsSID().toUpperCase(), "All Events");
 
         if (Objects.isNull(allEventsView)) {
-            if(Objects.nonNull(printStream)) {
-                context.getOutputStream().error("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
-            }
+            context.getOutputStream().debug("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
             throw new IllegalStateException(
                     "Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
         }
 
         RegressionInput input = setupRegressionData(queryOverOps, allEventsView, printStream);
-        DeploymentsTimespan deploymentsTimespan = RegressionUtil.getDeploymentsTimespan(apiClient, input.serviceId, input.deployments);
+        Pair<DateTime, DateTime> deploymentsTimespan = RegressionUtil.getDeploymentsActiveWindow(apiClient, input.serviceId, input.deployments);
         Versions version = new Versions();
-        if (deploymentsTimespan != null && deploymentsTimespan.getActiveWindow() != null && deploymentsTimespan.getActiveWindow().getFirst() != null) {
-            Pair<DateTime, DateTime> deploymentsActiveWindow = deploymentsTimespan.getActiveWindow();
-            DateTime deploymentStart = deploymentsActiveWindow.getFirst();
-
+        if (deploymentsTimespan != null && deploymentsTimespan.getFirst() != null) {
+            DateTime deploymentStart = deploymentsTimespan.getFirst();
             version.setVersion(Optional.ofNullable(getEvents(apiClient, input, deploymentStart, printStream))
                     .map(events -> events.stream().map(e -> e.id).sorted().map(Event::new).collect(Collectors.toList()))
                     .orElse(Collections.singletonList(new Event("NONE"))));
@@ -155,6 +164,18 @@ public class OverOpsServiceImpl implements OverOpsService {
             throw new IllegalArgumentException("Missing environment Id");
         }
 
+    }
+
+    private ReliabilityReportInput setupReliabilityData(QueryOverOps queryOverOps, SummarizedView allEventsView, PrintStream printStream) throws IOException, InterruptedException {
+        ReliabilityReportInput input = new ReliabilityReportInput();
+        input.timeFilter = TimeUtil.getLastWindowTimeFilter(queryOverOps.getPeriod());
+        input.regressionInput = setupRegressionData(queryOverOps, allEventsView, printStream);
+        input.regressionInput = setupRegressionData(queryOverOps, allEventsView, printStream);
+        input.environments = queryOverOps.getServiceId();
+        input.view = allEventsView.name;
+        input.outputDrillDownSeries = true;
+        input.mode = ReliabilityReportInput.DEFAULT_REPORT;
+        return input;
     }
 
     private RegressionInput setupRegressionData(QueryOverOps queryOverOps, SummarizedView allEventsView, PrintStream printStream)

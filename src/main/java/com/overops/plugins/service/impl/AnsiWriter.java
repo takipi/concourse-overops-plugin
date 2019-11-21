@@ -4,7 +4,6 @@ import com.overops.plugins.service.OutputWriter;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import de.vandermeer.asciitable.AsciiTable;
 import de.vandermeer.asciitable.CWC_FixedWidth;
-import de.vandermeer.skb.interfaces.translators.HtmlElementTranslator;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
@@ -15,7 +14,8 @@ import java.util.List;
 import static org.fusesource.jansi.Ansi.ansi;
 
 public class AnsiWriter implements OutputWriter {
-    PrintStream printStream;
+    private PrintStream printStream;
+    private boolean debug = false;
 
     public AnsiWriter(PrintStream printStream) {
         AnsiConsole.systemInstall();
@@ -30,6 +30,12 @@ public class AnsiWriter implements OutputWriter {
     @Override
     public void success(String message) {
         printStream.println(ansi().fgBrightGreen().a(message).reset().toString());
+    }
+
+    @Override
+    public void debug(String message) {
+        if (debug)
+            printStream.println(ansi().fgBrightBlue().a(message).reset().toString());
     }
 
     @Override
@@ -91,6 +97,11 @@ public class AnsiWriter implements OutputWriter {
         });
         printStream.println("\n");
 
+    }
+
+    @Override
+    public void debugMode(boolean debug) {
+        this.debug = debug;
     }
 
 }

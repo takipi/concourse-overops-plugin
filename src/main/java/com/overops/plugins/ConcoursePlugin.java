@@ -15,7 +15,6 @@ import com.overops.plugins.step.PreparationStep;
 
 import java.util.Arrays;
 
-
 public class ConcoursePlugin {
     private Context context;
 
@@ -30,6 +29,7 @@ public class ConcoursePlugin {
         try {
             Step<String[], QueryOverOps> prepStep = new PreparationStep(context);
             QueryOverOps query = prepStep.run(args);
+            context.getOutputStream().debugMode(query.isDebug());
             if (query.isCheckVersion()) {
                 Step<QueryOverOps, Versions> checkVersionStep = new CheckStep(context, overOpsService);
                 Versions versions = checkVersionStep.run(query);

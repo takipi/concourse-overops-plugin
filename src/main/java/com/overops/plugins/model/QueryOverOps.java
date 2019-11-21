@@ -25,6 +25,7 @@ public class QueryOverOps {
     private Double regressionDelta = 0d;
     private Double criticalRegressionDelta = 0d;
     private boolean applySeasonality = false;
+    private long period = 0;
 
     private boolean debug = false;
 
@@ -212,6 +213,14 @@ public class QueryOverOps {
 
     public void setCheckVersion(boolean checkVersion) {
         this.checkVersion = checkVersion;
+    }
+
+    public long getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(long period) {
+        this.period = period;
     }
 
     public static QueryOverOps mapToObject(Map<String, String> params) {

@@ -1,23 +1,26 @@
 package com.overops.plugins.service.impl;
 
 import com.google.gson.Gson;
-import com.overops.plugins.model.Event;
-import com.overops.plugins.model.Metadata;
-import com.overops.plugins.model.OOReportRegressedEvent;
-import com.overops.plugins.model.Version;
+import com.overops.plugins.model.*;
 import com.takipi.api.client.ApiClient;
+import com.takipi.api.client.data.event.MainEventStats;
+import com.takipi.api.client.functions.input.ReliabilityReportInput;
+import com.takipi.api.client.functions.output.*;
 import com.takipi.api.client.result.event.EventResult;
 import com.takipi.api.client.util.cicd.OOReportEvent;
-import com.takipi.api.client.util.cicd.ProcessQualityGates;
-import com.takipi.api.client.util.cicd.QualityGateReport;
 import com.takipi.api.client.util.regression.*;
+import org.joda.time.DateTime;
 
 import java.io.PrintStream;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static com.takipi.api.client.util.cicd.ProcessQualityGates.getArcLink;
 
 public class ReportBuilder {
-	
+	private static long totalErrorCount = 0;
+	private static int uniqueErrorCount = 0;
 	public static class QualityReport {
 
 		private final List<OOReportEvent> newIssues;
@@ -42,28 +45,28 @@ public class ReportBuilder {
 		private final boolean markedUnstable;
 
 		protected QualityReport(RegressionInput input, RateRegression regression,
-			List<OOReportRegressedEvent> regressions, List<OOReportEvent> criticalErrors, 
-			List<OOReportEvent> topErrors, List<OOReportEvent> newIssues,
-			List<OOReportEvent> resurfacedErrors, long eventVolume, int uniqueEventCounts, boolean unstable,
-			boolean checkNewGate, boolean checkResurfacedGate, boolean checkCriticalGate, boolean checkVolumeGate,
-			boolean checkUniqueGate, boolean checkRegressionGate, Integer maxEventVolume, Integer maxUniqueVolume, boolean markedUnstable) {
-			
+								List<OOReportRegressedEvent> regressions, List<OOReportEvent> criticalErrors,
+								List<OOReportEvent> topErrors, List<OOReportEvent> newIssues,
+								List<OOReportEvent> resurfacedErrors, long eventVolume, int uniqueEventCounts, boolean unstable,
+								boolean checkNewGate, boolean checkResurfacedGate, boolean checkCriticalGate, boolean checkVolumeGate,
+								boolean checkUniqueGate, boolean checkRegressionGate, Integer maxEventVolume, Integer maxUniqueVolume, boolean markedUnstable) {
+
 			this.input = input;
 			this.regression = regression;
-			
+
 			this.regressions = regressions;
 			this.allIssues = new ArrayList<OOReportEvent>();
 			this.newIssues = newIssues;
 			this.criticalErrors = criticalErrors;
 			this.topErrors = topErrors;
 			this.resurfacedErrors = resurfacedErrors;
-			
+
 			if (regressions != null) {
 				allIssues.addAll(regressions);
 			}
-		
-			this.eventVolume =  eventVolume;
-			this.uniqueEventsCount =  uniqueEventCounts;
+
+			this.eventVolume = eventVolume;
+			this.uniqueEventsCount = uniqueEventCounts;
 			this.unstable = unstable;
 			this.checkNewGate = checkNewGate;
 			this.checkResurfacedGate = checkResurfacedGate;
@@ -75,7 +78,7 @@ public class ReportBuilder {
 			this.maxUniqueVolume = maxUniqueVolume;
 			this.markedUnstable = markedUnstable;
 		}
-		
+
 		public RegressionInput getInput() {
 			return input;
 		}
@@ -83,7 +86,7 @@ public class ReportBuilder {
 		public RateRegression getRegression() {
 			return regression;
 		}
-		
+
 		public List<OOReportEvent> getResurfacedErrors() {
 			return resurfacedErrors;
 		}
@@ -99,7 +102,7 @@ public class ReportBuilder {
 		public List<OOReportEvent> getTopErrors() {
 			return topErrors;
 		}
-		
+
 		public List<OOReportEvent> getNewIssues() {
 			return newIssues;
 		}
@@ -107,11 +110,11 @@ public class ReportBuilder {
 		public List<OOReportRegressedEvent> getRegressions() {
 			return regressions;
 		}
-		
+
 		public long getUniqueEventsCount() {
-			return uniqueEventsCount; 
+			return uniqueEventsCount;
 		}
-		
+
 		public boolean getUnstable() {
 			return unstable;
 		}
@@ -186,244 +189,167 @@ public class ReportBuilder {
 			return v;
 		}
 	}
-	
-	private static class ReportVolume {
-		protected List<OOReportEvent> topEvents;
-		protected Collection<EventResult> filter;
-		
+
+	public static ReportBuilder.QualityReport execute(ApiClient apiClient, QueryOverOps properties, ReliabilityReport reliabilityReport,
+													  ReliabilityReportInput input, DateTime activeWindowStart, boolean runRegression, PrintStream output) {
+		boolean countGate = false;
+		if (properties.getMaxErrorVolume() != 0 || properties.getMaxUniqueErrors() != 0) {
+			countGate = true;
+		}
+		boolean checkMaxEventGate = properties.getMaxErrorVolume() != 0;
+		boolean checkUniqueEventGate = properties.getMaxUniqueErrors() != 0;
+
+		ReliabilityReport.ReliabilityReportItem report = reliabilityReport.items.values().iterator().next();
+		List<SeriesRow> rows = new ArrayList<>();
+		if (report.errors != null) {
+			rows = report.errors.readRows();
+		}
+
+		if (report.failures != null) {
+			rows.addAll(report.failures.readRows());
+		}
+		List<EventRow> errors = filterEvents(rows, properties.getRegexFilter());
+		errors.sort((o1, o2) -> (int) o2.hits - (int) o1.hits);
+
+		List<OOReportEvent> topErrors = new ArrayList<>();
+		List<OOReportEvent> resurfacedErrors = new ArrayList<>();
+		List<OOReportEvent> criticalErrors = new ArrayList<>();
+
+		for(EventRow row : errors) {
+			if (countGate && topErrors.size() <= properties.getPrintTopIssues()) {
+				String link = Optional.ofNullable(row.id).map(id -> id.split(",")[0])
+						.map(id -> getArcLink(apiClient, id, input.regressionInput, activeWindowStart))
+						.map(ReportBuilder::replaceSourceIdInArcLink).orElse("");
+				topErrors.add(convertResult(row, link));
+			}
+
+			if (properties.isResurfacedErrors() && row.labels.contains(RegressionStringUtil.RESURFACED_ISSUE)) {
+				String link = Optional.ofNullable(row.id).map(id -> id.split(",")[0])
+						.map(id -> getArcLink(apiClient, id, input.regressionInput, activeWindowStart))
+						.map(ReportBuilder::replaceSourceIdInArcLink).orElse("");
+				resurfacedErrors.add(convertResult(row, link));
+			}
+
+			if (input.regressionInput.criticalExceptionTypes != null && input.regressionInput.criticalExceptionTypes.contains(row.name)) {
+				String link = Optional.ofNullable(row.id).map(id -> id.split(",")[0])
+						.map(id -> getArcLink(apiClient, id, input.regressionInput, activeWindowStart))
+						.map(ReportBuilder::replaceSourceIdInArcLink).orElse("");
+				criticalErrors.add(convertResult(row, link));
+			}
+		}
+
+		List<OOReportEvent> newErrors = report.getNewErrors(properties.isNewEvents(), properties.isNewEvents()).stream().map(row -> {
+			String link = Optional.ofNullable(row.id).map(id -> id.split(",")[0])
+					.map(id -> getArcLink(apiClient, id, input.regressionInput, activeWindowStart))
+					.map(ReportBuilder::replaceSourceIdInArcLink).orElse("");
+			return convertResult(row, link);
+		}).collect(Collectors.toList());
+
+		List<OOReportRegressedEvent> regressionErrors = report.geIncErrors(runRegression, runRegression).stream().map(row -> {
+			String link = Optional.ofNullable(row.id).map(id -> id.split(",")[0])
+					.map(id -> getArcLink(apiClient, id, input.regressionInput, activeWindowStart))
+					.map(ReportBuilder::replaceSourceIdInArcLink).orElse("");
+			return convertResult(row, link);
+		}).map(e -> new OOReportRegressedEvent(e.getEvent(), 0,0, e.getType(), e.getARCLink()))
+				 .collect(Collectors.toList());
+		boolean hasRegressions = false;
+
+		if (!regressionErrors.isEmpty()) {
+			hasRegressions = true;
+		}
+
+		boolean maxVolumeExceeded = (properties.getMaxErrorVolume() != 0) && (totalErrorCount > properties.getMaxErrorVolume());
+
+		//max unique error gate
+		long uniqueEventCount;
+		boolean maxUniqueErrorsExceeded;
+		if (properties.getMaxUniqueErrors() != 0) {
+			uniqueEventCount = uniqueErrorCount;
+			maxUniqueErrorsExceeded = uniqueEventCount > properties.getMaxUniqueErrors();
+		} else {
+			uniqueEventCount = 0;
+			maxUniqueErrorsExceeded = false;
+		}
+
+		//new error gate
+		boolean newError = false;
+		if (newErrors.size() > 0) {
+			newError = true;
+		}
+
+		//resurfaced error gate
+		boolean resurfaced = false;
+		if (resurfacedErrors.size() > 0) {
+			resurfaced = true;
+		}
+
+		//critical error gate
+		boolean critical = false;
+		if (criticalErrors.size() > 0) {
+			critical = true;
+		}
+
+		//top errors
+		if (topErrors.size() > 0) {
+		}
+
+		boolean checkCritical = false;
+		if (input.regressionInput.criticalExceptionTypes != null && input.regressionInput.criticalExceptionTypes.size() > 0) {
+			checkCritical = true;
+		}
+
+		boolean unstable = (hasRegressions)
+				|| (maxVolumeExceeded)
+				|| (maxUniqueErrorsExceeded)
+				|| (newError)
+				|| (resurfaced)
+				|| (critical);
+		return new ReportBuilder.QualityReport(input.regressionInput, null, regressionErrors,
+				criticalErrors, topErrors, newErrors,
+				resurfacedErrors, totalErrorCount,
+				uniqueErrorCount, unstable, properties.isNewEvents(), properties.isResurfacedErrors(), checkCritical, checkMaxEventGate,
+				checkUniqueEventGate, runRegression, properties.getMaxErrorVolume(), properties.getMaxUniqueErrors(), properties.isMarkUnstable());
 	}
-	
-	private static boolean allowEvent(EventResult event, Pattern pattern) {
-		
-		if (pattern == null ) {
+
+	private static List<EventRow> filterEvents(List<SeriesRow> events, String regexFilter) {
+		if (regexFilter == null) {
+			return events.stream().map(e -> (EventRow) e).collect(Collectors.toList());
+		}
+
+		List<EventRow> returnEvents = new ArrayList<>();
+		for (SeriesRow event : events) {
+			if (evaluateEvent(event, getPattern(regexFilter))) {
+				EventRow e = (EventRow) event;
+				returnEvents.add(e);
+				// now increment counters
+				totalErrorCount += e.hits;
+				uniqueErrorCount++;
+			}
+		}
+		return returnEvents;
+	}
+
+	private static boolean evaluateEvent(SeriesRow event, Pattern pattern) {
+		if (pattern == null) {
 			return true;
 		}
-		
+
 		String json = new Gson().toJson(event);
-		boolean result = !pattern.matcher(json).find();
-		
-		return result;
-	}
-	
-	private static List<EventResult> getSortedEventsByVolume(Collection<EventResult> events) {
-		
-		List<EventResult> result = new ArrayList<EventResult>(events);
-		
-		result.sort((o1, o2) -> {
-			long v1;
-			long v2;
 
-			if (o1.stats != null) {
-				v1 = o1.stats.hits;
-			} else {
-				v1 = 0;
-			}
-
-			if (o2.stats != null) {
-				v2 = o2.stats.hits;
-			} else {
-				v2 = 0;
-			}
-
-			return (int)(v2 - v1);
-		});
-		
-		return result;
+		return !pattern.matcher(json).find();
 	}
-	
-	private static void addEvent(Set<EventResult> events, EventResult event, 
-		Pattern pattern, PrintStream output, boolean verbose) {
-		
-		if (allowEvent(event, pattern)) {
-			events.add(event);
-		} else if ((output != null) && (verbose)) {
-			output.println(event + " did not match regexFilter and was skipped");
-		}
-	}
-	
-	private static Collection<EventResult> filterEvents(RateRegression rateRegression,
-			Pattern pattern, PrintStream output, boolean verbose) {
-		
-		Set<EventResult> result = new HashSet<>();
-		
-		if (pattern != null) {
-		
-			for (EventResult event : rateRegression.getNonRegressions()) {
-				addEvent(result, event, pattern, output, verbose);
-			}
-			
-			for (EventResult event : rateRegression.getAllNewEvents().values()) {
-				addEvent(result, event, pattern, output, verbose);
-			}
-			
-			for (RegressionResult regressionResult : rateRegression.getAllRegressions().values()) {
-				addEvent(result, regressionResult.getEvent(), pattern, output, verbose);
 
-			}
-			
-		} else {
-			result.addAll(rateRegression.getNonRegressions());
-			result.addAll(rateRegression.getAllNewEvents().values());
-		
-			for (RegressionResult regressionResult : rateRegression.getAllRegressions().values()) {
-				result.add(regressionResult.getEvent());
-			}
-		}
-		
-		return result;
-	}
-	
-	private static ReportVolume getReportVolume(ApiClient apiClient, 
-			RegressionInput input, RateRegression rateRegression,
-			int limit, String regexFilter,  PrintStream output, boolean verbose) {
-		
-		ReportVolume result = new ReportVolume();
-		
+	private static Pattern getPattern(String regexFilter) {
 		Pattern pattern;
-		
+
 		if ((regexFilter != null) && (regexFilter.length() > 0)) {
 			pattern = Pattern.compile(regexFilter);
 		} else {
 			pattern = null;
 		}
-		
-		Collection<EventResult> eventsSet = filterEvents(rateRegression, pattern, output, verbose);		
-		List<EventResult> events =  getSortedEventsByVolume(eventsSet);
-		
-		if (pattern != null) {
-			result.filter = eventsSet;
-		}
-				
-		result.topEvents = new ArrayList<>();
-				
-		for (EventResult event : events) {	
-			if (event.stats != null) {
-				if (result.topEvents.size() < limit) {
-					String arcLink = ProcessQualityGates.getArcLink(apiClient, event.id, input, rateRegression.getActiveWndowStart());
-					result.topEvents.add(new OOReportEvent(event, arcLink));
-				}
-			}		
-		}
-				
-		return result;
+		return pattern;
 	}
-	
-	/*
-	 * Entry point into report engine
-	 */
-	public static QualityReport execute(ApiClient apiClient, RegressionInput input, 
-			Integer maxEventVolume, Integer maxUniqueErrors, int topEventLimit, String regexFilter, 
-			boolean newEvents, boolean resurfacedEvents, boolean runRegressions, boolean markedUnstable, PrintStream output, boolean verbose) {
-		
-		//check if total or unique gates are being tested
-		boolean countGate = false;
-		if (maxEventVolume != 0 || maxUniqueErrors != 0) {
-			countGate = true;
-		} 
-		boolean checkMaxEventGate = maxEventVolume != 0;
-		boolean checkUniqueEventGate = maxUniqueErrors != 0;
-		
-		//get the CICD quality report for all gates but Regressions
-		//initialize the QualityGateReport so we don't get null pointers below
-		QualityGateReport qualityGateReport = new QualityGateReport();
-		if (countGate || newEvents || resurfacedEvents || regexFilter != null) {
-			qualityGateReport = ProcessQualityGates.processCICDInputs(apiClient, input, newEvents, resurfacedEvents, 
-					regexFilter, topEventLimit, countGate, output, verbose);
-		}
-		 
-		//run the regression gate
-		ReportVolume reportVolume;
-		RateRegression rateRegression = null;
-		List<OOReportRegressedEvent> regressions = null;
-		boolean hasRegressions = false;
-		if (runRegressions) {
-			rateRegression = RegressionUtil.calculateRateRegressions(apiClient, input, output, verbose);
-			
-			reportVolume = getReportVolume(apiClient, input, 
-					rateRegression, topEventLimit, regexFilter, output, verbose);
-				
-			regressions = getAllRegressions(apiClient, input, rateRegression, reportVolume.filter);
-			if (regressions != null && regressions.size() > 0) {
-				hasRegressions = true;
-				replaceSourceId2(regressions);
-			}
-		}
-		
-		//max total error gate
-		boolean maxVolumeExceeded = (maxEventVolume != 0) && (qualityGateReport.getTotalErrorCount() > maxEventVolume);
-		
-		//max unique error gate
-		long uniqueEventCount;
-		boolean maxUniqueErrorsExceeded;
-		if (maxUniqueErrors != 0) {
-			uniqueEventCount = qualityGateReport.getUniqueErrorCount();
-			maxUniqueErrorsExceeded = uniqueEventCount > maxUniqueErrors;
-		} else {
-			uniqueEventCount = 0;
-			maxUniqueErrorsExceeded = false;
-		}
-		
-		//new error gate
-		boolean newErrors = false;
-		if (qualityGateReport.getNewErrors() != null && qualityGateReport.getNewErrors().size() > 0) {
-			newErrors = true;
-			replaceSourceId(qualityGateReport.getNewErrors());
-		}
-		
-		//resurfaced error gate
-		boolean resurfaced = false;
-		if (qualityGateReport.getResurfacedErrors() != null && qualityGateReport.getResurfacedErrors().size() > 0) {
-			resurfaced = true;
-			replaceSourceId(qualityGateReport.getResurfacedErrors());
-		}
-		
-		//critical error gate
-		boolean critical = false;
-		if (qualityGateReport.getCriticalErrors() != null  && qualityGateReport.getCriticalErrors().size() > 0) {
-			critical = true;
-			replaceSourceId(qualityGateReport.getCriticalErrors());
-		}
-		
-		//top errors
-		if (qualityGateReport.getTopErrors() != null  && qualityGateReport.getTopErrors().size() > 0) {
-			replaceSourceId(qualityGateReport.getTopErrors());
-		}
-		
-		boolean checkCritical = false;
-		if (input.criticalExceptionTypes != null && input.criticalExceptionTypes.size() > 0) {
-			checkCritical = true;
-		}
-		
-		boolean unstable = (hasRegressions)
-				|| (maxVolumeExceeded)
-				|| (maxUniqueErrorsExceeded)
-				|| (newErrors)
-				|| (resurfaced)
-				|| (critical);
-		
-		return new QualityReport(input, rateRegression, regressions,
-				qualityGateReport.getCriticalErrors(), qualityGateReport.getTopErrors(), qualityGateReport.getNewErrors(), 
-				qualityGateReport.getResurfacedErrors(), qualityGateReport.getTotalErrorCount(),
-				qualityGateReport.getUniqueErrorCount(), unstable, newEvents, resurfacedEvents, checkCritical, checkMaxEventGate,
-				checkUniqueEventGate, runRegressions, maxEventVolume, maxUniqueErrors, markedUnstable);
-	}
-	
-	//for each event, replace the source ID in the ARC link with the number 4 (which means Jenkins)
-	private static void replaceSourceId (List<OOReportEvent> events) {
-		for (OOReportEvent ooReportEvent : events) {
-			String arcLink = replaceSourceIdInArcLink(ooReportEvent.getARCLink());
-			ooReportEvent.setArcLink(arcLink);
-		}
-	}
-	
-	//for each event, replace the source ID in the ARC link with the number 4 (which means Jenkins)
-	private static void replaceSourceId2 (List<OOReportRegressedEvent> events) {
-		for (OOReportEvent ooReportEvent : events) {
-			String arcLink = replaceSourceIdInArcLink(ooReportEvent.getARCLink());
-			ooReportEvent.setArcLink(arcLink);
-		}
-	}
-	
+
 	private static String replaceSourceIdInArcLink(String arcLink) {
 		if (arcLink == null) {
 			return arcLink;
@@ -431,45 +357,30 @@ public class ReportBuilder {
 		String returnString;
 		CharSequence target = "source=43";
 		CharSequence replacement = "source=4";
-				
+
 		returnString = arcLink.replace(target, replacement);
-		
-		return returnString;	
+
+		return returnString;
 	}
-		
-	private static List<OOReportRegressedEvent> getAllRegressions(ApiClient apiClient, 
-			RegressionInput input, RateRegression rateRegression, Collection<EventResult> filter) {
 
-		List<OOReportRegressedEvent> result = new ArrayList<OOReportRegressedEvent>();
-
-		for (RegressionResult regressionResult : rateRegression.getCriticalRegressions().values()) {
-
-			if ((filter != null) && (!filter.contains(regressionResult.getEvent()))) {
-				continue;
-			}
-			
-			String arcLink = ProcessQualityGates.getArcLink(apiClient, regressionResult.getEvent().id, input, rateRegression.getActiveWndowStart());
-
-			OOReportRegressedEvent regressedEvent = new OOReportRegressedEvent(regressionResult.getEvent(),
-					regressionResult.getBaselineHits(), regressionResult.getBaselineInvocations(), RegressionStringUtil.SEVERE_REGRESSION, arcLink);
-
-			result.add(regressedEvent);
-		}
-		
-		for (RegressionResult regressionResult : rateRegression.getAllRegressions().values()) {
-
-			if (rateRegression.getCriticalRegressions().containsKey(regressionResult.getEvent().id)) {
-				continue;
-			}
-			
-			String arcLink = ProcessQualityGates.getArcLink(apiClient, regressionResult.getEvent().id, input, rateRegression.getActiveWndowStart());
-
-			OOReportRegressedEvent regressedEvent = new OOReportRegressedEvent(regressionResult.getEvent(),
-					regressionResult.getBaselineHits(), regressionResult.getBaselineInvocations(), RegressionStringUtil.REGRESSION, arcLink);
-
-			result.add(regressedEvent);
-		}
-
-		return result;
+	private static OOReportEvent convertResult(BaseEventRow e, String link) {
+		EventResult result = new EventResult();
+		MainEventStats stats = new MainEventStats();
+		stats.hits = e.hits;
+		stats.invocations = e.invocations;
+		result.id = e.id;
+		Optional.ofNullable(e.labels).map(labels -> labels.split(",")).map(Arrays::asList)
+				.ifPresent(labels -> result.labels = labels);
+		Optional.ofNullable(e.similar_event_ids).map(events -> events.split(",")).map(Arrays::asList)
+				.ifPresent(events -> result.similar_event_ids = events);
+		result.name = e.name;
+		result.summary = e.summary;
+		result.type = e.type;
+		result.message = e.message;
+		result.first_seen = String.valueOf(e.first_seen);
+		result.introduced_by = e.introduced_by;
+		result.jira_issue_url = e.jira_issue_url;
+		result.stats = stats;
+		return new OOReportEvent(result, e.type, link);
 	}
 }

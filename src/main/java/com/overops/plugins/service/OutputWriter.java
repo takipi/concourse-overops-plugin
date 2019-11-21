@@ -11,6 +11,8 @@ public interface OutputWriter {
 
     void success(String message);
 
+    void debug(String message);
+
     void yellow(String message);
 
     void print(String s, Ansi.Color color);
@@ -22,4 +24,6 @@ public interface OutputWriter {
     void block(String s, Ansi.Color color, boolean closeLine);
 
     void table(List<String> headers, List<OOReportEvent> body);
+
+    void debugMode(boolean debug);
 }
