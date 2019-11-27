@@ -1,10 +1,7 @@
 package com.overops.plugins.service.impl;
 
 import com.google.gson.Gson;
-import com.overops.plugins.model.Event;
-import com.overops.plugins.model.Metadata;
 import com.overops.plugins.model.OOReportRegressedEvent;
-import com.overops.plugins.model.Version;
 import com.takipi.api.client.ApiClient;
 import com.takipi.api.client.result.event.EventResult;
 import com.takipi.api.client.util.cicd.OOReportEvent;
@@ -161,29 +158,6 @@ public class ReportBuilder {
 			value = value.replace("[", "");
 			value = value.replace("]", "");
 			return value;
-		}
-
-		public Version getMaxVersion() {
-			Version version = null;
-			if (Objects.nonNull(getNewIssues()) && getNewIssues().size() > 0) {
-				version = getNewIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
-						.max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createVersion).orElse(new Version());
-			}
-
-			if (Objects.isNull(version) && (Objects.nonNull(getAllIssues()) && getAllIssues().size() > 0)) {
-				version = getAllIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
-						.max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createVersion).orElse(new Version());
-			}
-
-			return Optional.ofNullable(version).orElse(new Version(new Event()));
-		}
-
-		private Version createVersion(EventResult e) {
-			Version v = new Version(new Event(e.id));
-			v.addMetadata(new Metadata("type", e.type));
-			v.addMetadata(new Metadata("summary", e.summary));
-			v.addMetadata(new Metadata("name", e.name));
-			return v;
 		}
 	}
 	

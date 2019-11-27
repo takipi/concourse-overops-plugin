@@ -1,9 +1,7 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
-import com.overops.plugins.model.Event;
 import com.overops.plugins.model.QueryOverOps;
-import com.overops.plugins.model.Versions;
 import com.overops.plugins.service.OverOpsService;
 import com.overops.plugins.utils.StringUtils;
 import com.takipi.api.client.ApiClient;
@@ -11,12 +9,10 @@ import com.takipi.api.client.RemoteApiClient;
 import com.takipi.api.client.data.view.SummarizedView;
 import com.takipi.api.client.observe.Observer;
 import com.takipi.api.client.result.event.EventResult;
-import com.takipi.api.client.util.regression.DeploymentsTimespan;
 import com.takipi.api.client.util.regression.RegressionInput;
 import com.takipi.api.client.util.regression.RegressionUtil;
 import com.takipi.api.client.util.view.ViewUtil;
 import com.takipi.common.util.CollectionUtil;
-import com.takipi.common.util.Pair;
 import org.fusesource.jansi.Ansi;
 import org.joda.time.DateTime;
 
@@ -24,7 +20,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class OverOpsServiceImpl implements OverOpsService {
     private static final String SEPERATOR = ",";
@@ -74,54 +69,6 @@ public class OverOpsServiceImpl implements OverOpsService {
                 queryOverOps.getPrintTopIssues(), queryOverOps.getRegexFilter(), queryOverOps.isNewEvents(), queryOverOps.isResurfacedErrors(),
                 runRegressions, queryOverOps.isMarkUnstable(), printStream, queryOverOps.isDebug());
 
-    }
-
-    @Override
-    public Versions check(QueryOverOps queryOverOps) throws IOException, InterruptedException {
-        PrintStream printStream;
-        if (convertToMinutes(queryOverOps.getBaselineTimespan()) > 0) {
-            runRegressions = true;
-        }
-        if (queryOverOps.isDebug()) {
-            printStream = System.err;
-        } else {
-            printStream = null;
-        }
-
-        if (Objects.nonNull(printStream)) {
-            context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
-        }
-
-        validateInputs(queryOverOps, printStream);
-
-        RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder().setHostname(queryOverOps.getOverOpsURL()).setApiKey(queryOverOps.getOverOpsAPIKey()).build();
-
-        if (Objects.nonNull(printStream) && (queryOverOps.isDebug())) {
-            apiClient.addObserver(new ApiClientObserver(printStream, queryOverOps.isDebug()));
-        }
-
-        SummarizedView allEventsView = ViewUtil.getServiceViewByName(apiClient, queryOverOps.getOverOpsSID().toUpperCase(), "All Events");
-
-        if (Objects.isNull(allEventsView)) {
-            if(Objects.nonNull(printStream)) {
-                context.getOutputStream().error("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
-            }
-            throw new IllegalStateException(
-                    "Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
-        }
-
-        RegressionInput input = setupRegressionData(queryOverOps, allEventsView, printStream);
-        DeploymentsTimespan deploymentsTimespan = RegressionUtil.getDeploymentsTimespan(apiClient, input.serviceId, input.deployments);
-        Versions version = new Versions();
-        if (deploymentsTimespan != null && deploymentsTimespan.getActiveWindow() != null && deploymentsTimespan.getActiveWindow().getFirst() != null) {
-            Pair<DateTime, DateTime> deploymentsActiveWindow = deploymentsTimespan.getActiveWindow();
-            DateTime deploymentStart = deploymentsActiveWindow.getFirst();
-
-            version.setVersion(Optional.ofNullable(getEvents(apiClient, input, deploymentStart, printStream))
-                    .map(events -> events.stream().map(e -> e.id).sorted().map(Event::new).collect(Collectors.toList()))
-                    .orElse(Collections.singletonList(new Event("NONE"))));
-        }
-        return version;
     }
 
     private void validateInputs (QueryOverOps queryOverOps, PrintStream printStream) {
