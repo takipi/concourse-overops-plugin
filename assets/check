@@ -1,9 +1,13 @@
 #!/bin/bash
 set -e # exit on error
+input=$(cat)
 
-# run in the "check" mode
-OVEROPS_CHECK=true
-
-source $CONCOURSE_RESOURCES/shared
-
-$cmd
+domain=$(jq -r '.source.overOpsURL | values' <<< $input)
+url="${domain}/api/v1/test"
+status_code=$(curl -o /dev/null --silent --head --write-out '%{http_code}\n' $url)
+if [ $status_code -eq "200" ]
+then
+    echo "[{\"API\":\"OK\"}]"
+else
+    echo "[{\"API\":\"FAIL\"}]"
+fi
