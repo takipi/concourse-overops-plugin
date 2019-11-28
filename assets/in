@@ -5,3 +5,5 @@ set -e # exit on error
 source $CONCOURSE_RESOURCES/shared
 
 $cmd
+
+jq -n "{\"version\": ${CONCOURSE_OUT}}"  3>&1

@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e # exit on error
-input=$(cat)
+source $CONCOURSE_RESOURCES/shared
 
-domain=$(jq -r '.source.overOpsURL | values' <<< $input)
-url="${domain}/api/v1/test"
+url="${OVEROPS_URL}/api/v1/test"
 status_code=$(curl -o /dev/null --silent --head --write-out '%{http_code}\n' $url)
 if [ $status_code -eq "200" ]
 then
-    echo "[{\"API\":\"OK\"}]"
+    jq -n "[${CONCOURSE_OUT}]" 3>&1
 else
-    echo "[{\"API\":\"FAIL\"}]"
+    echo "${OVEROPS_URL} responded with unexpected status code $status_code" 1>&2
+    exit 1
 fi

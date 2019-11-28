@@ -79,3 +79,5 @@ if [ $OVEROPS_DEBUG == "true" ]; then
     # print the executed command without exposing the API Key
     1>&2 echo ${cmd//$OVEROPS_API_KEY/***}
 fi
+
+CONCOURSE_OUT="{\"${OVEROPS_APPLICATION_NAME}\": \"${OVEROPS_DEPLOYMENT_NAME}\"}"
