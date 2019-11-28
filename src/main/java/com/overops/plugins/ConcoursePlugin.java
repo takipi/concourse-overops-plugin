@@ -32,6 +32,7 @@ public class ConcoursePlugin {
             Step<ReportBuilder.QualityReport, Boolean> generateReportStep = new GenerateReportStep(context);
             ReportBuilder.QualityReport report = analyzingStep.run(query);
             status = generateReportStep.run(report);
+            System.out.println(context.getObjectMapper().writeValueAsString(report.getMetadata()));
         } catch (Exception e) {
             status = false;
             context.getOutputStream().error("Exceptions: " + e.toString());

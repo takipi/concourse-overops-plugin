@@ -1,6 +1,7 @@
 package com.overops.plugins.service.impl;
 
 import com.google.gson.Gson;
+import com.overops.plugins.model.Metadata;
 import com.overops.plugins.model.OOReportRegressedEvent;
 import com.takipi.api.client.ApiClient;
 import com.takipi.api.client.result.event.EventResult;
@@ -158,6 +159,25 @@ public class ReportBuilder {
 			value = value.replace("[", "");
 			value = value.replace("]", "");
 			return value;
+		}
+
+		public List<Metadata> getMetadata() {
+			List<Metadata> metadata = null;
+			if (Objects.nonNull(getNewIssues()) && getNewIssues().size() > 0) {
+				metadata = getNewIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
+						.max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createMeta).orElse(new ArrayList<>());
+			}
+
+			if (Objects.isNull(metadata) && (Objects.nonNull(getAllIssues()) && getAllIssues().size() > 0)) {
+				metadata = getAllIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
+						.max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createMeta).orElse(new ArrayList<>());
+			}
+
+			return Optional.ofNullable(metadata).orElse(new ArrayList<>());
+		}
+
+		private List<Metadata> createMeta(EventResult e) {
+			return Arrays.asList(new Metadata("type", e.type), new Metadata("summary", e.summary),new Metadata("name", e.name));
 		}
 	}
 	
