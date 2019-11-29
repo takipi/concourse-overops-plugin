@@ -80,4 +80,9 @@ if [ $OVEROPS_DEBUG == "true" ]; then
     1>&2 echo ${cmd//$OVEROPS_API_KEY/***}
 fi
 
-CONCOURSE_OUT="{\"${OVEROPS_APPLICATION_NAME}\": \"${OVEROPS_DEPLOYMENT_NAME}\"}"
+GENERATED_TIMESTAMP_VERSION="{\"timestamp\": \"$(date +%s)\"}"
+TS=$(jq -r '.version.timestamp // empty' <<< $input)
+VERSION='{}'
+if [ -n "$TS" ]; then
+  VERSION="{\"timestamp\": \"$TS\"}"
+fi

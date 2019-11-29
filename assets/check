@@ -6,7 +6,7 @@ url="${OVEROPS_URL}/api/v1/test"
 status_code=$(curl -o /dev/null --silent --head --write-out '%{http_code}\n' $url)
 if [ $status_code -eq "200" ]
 then
-    jq -n "[${CONCOURSE_OUT}]" 3>&1
+    jq -n --argjson version "$GENERATED_TIMESTAMP_VERSION" '[$version]' 3>&1
 else
     echo "${OVEROPS_URL} responded with unexpected status code $status_code" 1>&2
     exit 1
