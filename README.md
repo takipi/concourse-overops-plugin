@@ -2,7 +2,7 @@
 
 ## Quick Set Up
 
-Assuming there is already an instance of Concourse up, the next step is to attatch the OverOps Resource to your existing pipeline. Configure the example ```overops-resource.yml``` and then run ```fly -t OO-example set-pipeline -c pipeline.yml -p oo-test``` to add it into your Build. Please replace the ```OO-example``` with your own names and make sure the configuration is the correct yml file.
+Assuming there is already an instance of Concourse up, the next step is to attach the OverOps Resource to your existing pipeline. Configure the example ```overops-resource.yml``` and then run ```fly -t OO-example set-pipeline -c pipeline.yml -p oo-test``` to add it into your Build. Please replace the ```OO-example``` with your own names and make sure the configuration is the correct yml file.
 
 ## Configuration example
 
@@ -17,7 +17,7 @@ resource_types:
     tag: latest
 
 resources:
-- name: overops-check
+- name: overops-report
   type: overops-resource
   source:
     overOpsURL: https://api.overops.com
@@ -25,22 +25,28 @@ resources:
     overOpsAPIKey: ((overOpsAPIKey))
     applicationName: App1
     deploymentName: Dep1
-    markUnstable: false
-    activeTimespan: 2d
-    baselineTimespan: 14d
+    markUnstable: true
     newEvents: true
     resurfacedErrors: true
     debug: false
 
 jobs:
-- name: test
-  plan:
-  - get: overops-check
-    params:
-      # override some optional source parameters on the job level
-      debug: true
-      markUnstable: true
+  - name: demo
+    serial: true
+    plan:
+      - task: hello-world
+        config:
+          platform: linux
+          image_resource:
+            type: docker-image
+            source: { repository: busybox }
+          run:
+            path: echo
+            args:
+              - hello world
+      - put: overops-report
 ```
+
 ## Configuration parameters
 
 Parameter | Required | Default Value | Description
@@ -67,19 +73,17 @@ criticalRegressionDelta | false | 0 | The change in percentage between an event'
 applySeasonality | false | false | If peaks have been seen in baseline window, then this would be considered normal and not a regression. Should the plugin identify an equal or matching peak in the baseline time window, or two peaks of greater than 50% of the volume seen in the active window, the event will not be marked as a regression.
 debug | false | false | For advanced debugging purposes only
 
-This parameters need to be provided in the `source` configuration of your `resource`,
-however _non-required_ parameters can be overwriten on the **get** step `params` configuration,
-for more details see example below.
+This parameters need to be provided in the `source` configuration of your `resource`.
 
 ## ARC Links
 
 The ARC Links inside of the UI display after a build with the OverOps resource are not clickable they must be copy and pasted to be used.
 
-## Behaviour
+## Behavior
 
 ### `check`
 
-Checks for the OverOps events associted given application deployment. Returns a list of associated event ids.
+Checks OverOps API responsiveness
 
 ### `in`
 
@@ -87,4 +91,4 @@ Generates the report based on OverOps events, if `markUnstable` is set to `true`
 
 ### `out`
 
-N/A
+Creates resource version and triggers the `in` script.

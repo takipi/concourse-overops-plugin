@@ -76,6 +76,7 @@ java -jar /artifact/concourse-overops.jar \
 """
 
 if [ $OVEROPS_DEBUG == "true" ]; then
+    1>&2 echo ${input//$OVEROPS_API_KEY/***}
     # print the executed command without exposing the API Key
     1>&2 echo ${cmd//$OVEROPS_API_KEY/***}
 fi
