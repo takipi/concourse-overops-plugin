@@ -2,14 +2,12 @@
 
 input=$(cat) # read stdin JSON provided by Concourse
 
-# Set sources
-OVEROPS_URL=$(jq -r '.source.overOpsURL | values' <<< $input)
-OVEROPS_SID=$(jq -r '.source.overOpsSID | values' <<< $input)
-OVEROPS_API_KEY=$(jq -r '.source.overOpsAPIKey | values' <<< $input)
-OVEROPS_APPLICATION_NAME=$(jq -r '.source.applicationName | values' <<< $input)
-OVEROPS_DEPLOYMENT_NAME=$(jq -r '.source.deploymentName | values' <<< $input)
-
 # Set parameters from the job level
+OVEROPS_URL=$(jq -r '.params.overOpsURL | values' <<< $input)
+OVEROPS_SID=$(jq -r '.params.overOpsSID | values' <<< $input)
+OVEROPS_API_KEY=$(jq -r '.params.overOpsAPIKey | values' <<< $input)
+OVEROPS_APPLICATION_NAME=$(jq -r '.params.applicationName | values' <<< $input)
+OVEROPS_DEPLOYMENT_NAME=$(jq -r '.params.deploymentName | values' <<< $input)
 OVEROPS_SERVICE_ID=$(jq -r '.params.serviceId | values' <<< $input)
 OVEROPS_REGEX_FILTER=$(jq -r '.params.regexFilter | values' <<< $input)
 OVEROPS_MARK_UNSTABLE=$(jq -r '.params.markUnstable | values' <<< $input)
@@ -29,6 +27,11 @@ OVEROPS_APPLY_SEASONALITY=$(jq -r '.params.applySeasonality | values' <<< $input
 OVEROPS_DEBUG=$(jq -r '.params.debug | values' <<< $input)
 
 # Set global level parameters, if the local level ones where not set
+OVEROPS_URL=${OVEROPS_URL:-$(jq -r '.source.overOpsURL | values' <<< $input)}
+OVEROPS_SID=${OVEROPS_SID:-$(jq -r '.source.overOpsSID | values' <<< $input)}
+OVEROPS_API_KEY=${OVEROPS_API_KEY:-$(jq -r '.source.overOpsAPIKey | values' <<< $input)}
+OVEROPS_APPLICATION_NAME=${OVEROPS_APPLICATION_NAME:-$(jq -r '.source.applicationName | values' <<< $input)}
+OVEROPS_DEPLOYMENT_NAME=${OVEROPS_DEPLOYMENT_NAME:-$(jq -r '.source.deploymentName | values' <<< $input)}
 OVEROPS_SERVICE_ID=${OVEROPS_SERVICE_ID:-$(jq -r '.source.serviceId | values' <<< $input)}
 OVEROPS_REGEX_FILTER=${OVEROPS_REGEX_FILTER:-$(jq -r '.source.regexFilter | values' <<< $input)}
 OVEROPS_MARK_UNSTABLE=${OVEROPS_MARK_UNSTABLE:-$(jq -r '.source.markUnstable | values' <<< $input)}
