@@ -28,8 +28,6 @@ public class QueryOverOps {
 
     private boolean debug = false;
 
-    private boolean checkVersion = false;
-
     public String getOverOpsURL() {
         return overOpsURL;
     }
@@ -206,14 +204,6 @@ public class QueryOverOps {
         this.debug = debug;
     }
 
-    public boolean isCheckVersion() {
-        return checkVersion;
-    }
-
-    public void setCheckVersion(boolean checkVersion) {
-        this.checkVersion = checkVersion;
-    }
-
     public static QueryOverOps mapToObject(Map<String, String> params) {
         QueryOverOps queryOverOps = new QueryOverOps();
         queryOverOps.overOpsURL = params.get("overOpsURL");
@@ -238,7 +228,6 @@ public class QueryOverOps {
         queryOverOps.criticalRegressionDelta = Double.parseDouble(params.getOrDefault("criticalRegressionDelta", "0"));
         queryOverOps.applySeasonality = Boolean.parseBoolean(params.getOrDefault("applySeasonality", "false"));
         queryOverOps.debug = Boolean.parseBoolean(params.getOrDefault("debug", "false"));
-        queryOverOps.checkVersion = Boolean.parseBoolean(params.getOrDefault("checkVersion", "false"));
         return queryOverOps;
     }
 

@@ -1,9 +1,14 @@
 #!/bin/bash
 set -e # exit on error
-
-# run in the "check" mode
-OVEROPS_CHECK=true
-
 source $CONCOURSE_RESOURCES/shared
 
-$cmd
+# check if API responds, expected resource versions will be generated on demand by "out" script
+url="${OVEROPS_URL}/api/v1/test"
+status_code=$(curl -o /dev/null --silent --head --write-out '%{http_code}\n' $url)
+if [ $status_code -eq "200" ]
+then
+    jq -n --argjson version "$VERSION" 'if ($version|length > 0) then [$version] else [] end' 3>&1
+else
+    echo "${OVEROPS_URL} responded with unexpected status code $status_code" 1>&2
+    exit 1
+fi

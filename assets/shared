@@ -76,6 +76,14 @@ java -jar /artifact/concourse-overops.jar \
 """
 
 if [ $OVEROPS_DEBUG == "true" ]; then
+    1>&2 echo ${input//$OVEROPS_API_KEY/***}
     # print the executed command without exposing the API Key
     1>&2 echo ${cmd//$OVEROPS_API_KEY/***}
+fi
+
+GENERATED_TIMESTAMP_VERSION="{\"timestamp\": \"$(date +%s)\"}"
+TS=$(jq -r '.version.timestamp // empty' <<< $input)
+VERSION='{}'
+if [ -n "$TS" ]; then
+  VERSION="{\"timestamp\": \"$TS\"}"
 fi
