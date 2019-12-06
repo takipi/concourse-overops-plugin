@@ -5,16 +5,15 @@ import java.util.List;
 
 public class Version {
 
+    private Event version;
+    private List<Metadata> metadata = new ArrayList<>();
+
     public Version() {
     }
 
     public Version(Event version) {
         this.version = version;
     }
-
-    private Event version;
-
-    private List<Metadata> metadata = new ArrayList<>();
 
     public Event getVersion() {
         return version;

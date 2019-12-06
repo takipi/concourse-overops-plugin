@@ -37,6 +37,14 @@ public class OverOpsServiceImpl implements OverOpsService {
         this.context = context;
     }
 
+    private static Collection<String> parseArrayString(String value, PrintStream printStream, String name) {
+        if (StringUtils.isEmpty(value)) {
+            return Collections.emptySet();
+        }
+
+        return Arrays.asList(value.trim().split(Pattern.quote(SEPERATOR)));
+    }
+
     @Override
     public ReportBuilder.QualityReport perform(QueryOverOps queryOverOps) throws IOException, InterruptedException {
         PrintStream printStream;
@@ -52,7 +60,10 @@ public class OverOpsServiceImpl implements OverOpsService {
 
         validateInputs(queryOverOps, printStream);
 
-        ApiClient apiClient = RemoteApiClient.newBuilder().setHostname(queryOverOps.getOverOpsURL()).setApiKey(queryOverOps.getOverOpsAPIKey()).build();
+        ApiClient apiClient = RemoteApiClient.newBuilder()
+                .setHostname(queryOverOps.getOverOpsURL())
+                .setApiKey(queryOverOps.getOverOpsAPIKey())
+                .build();
 
         if (Objects.nonNull(printStream) && (queryOverOps.isDebug())) {
             apiClient.addObserver(new OverOpsServiceImpl.ApiClientObserver(printStream, queryOverOps.isDebug()));
@@ -107,7 +118,9 @@ public class OverOpsServiceImpl implements OverOpsService {
 
         validateInputs(queryOverOps, printStream);
 
-        RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder().setHostname(queryOverOps.getOverOpsURL()).setApiKey(queryOverOps.getOverOpsAPIKey()).build();
+        RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder()
+                .setHostname(queryOverOps.getOverOpsURL())
+                .setApiKey(queryOverOps.getOverOpsAPIKey()).build();
 
         if (Objects.nonNull(printStream) && (queryOverOps.isDebug())) {
             apiClient.addObserver(new ApiClientObserver(printStream, queryOverOps.isDebug()));
@@ -133,7 +146,7 @@ public class OverOpsServiceImpl implements OverOpsService {
         return version;
     }
 
-    private void validateInputs (QueryOverOps queryOverOps, PrintStream printStream) {
+    private void validateInputs(QueryOverOps queryOverOps, PrintStream printStream) {
         String apiHost = queryOverOps.getOverOpsURL();
         String apiKey = queryOverOps.getOverOpsAPIKey();
 
@@ -148,8 +161,8 @@ public class OverOpsServiceImpl implements OverOpsService {
         //validate active and baseline time window
         if (!"0".equalsIgnoreCase(queryOverOps.getActiveTimespan())) {
             if (convertToMinutes(queryOverOps.getActiveTimespan()) == 0) {
-                context.getOutputStream().error("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
-                throw new IllegalArgumentException("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
+                context.getOutputStream().error("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() + " is not properly formated. See help for format instructions.");
+                throw new IllegalArgumentException("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() + " is not properly formated. See help for format instructions.");
             }
         }
         if (!"0".equalsIgnoreCase(queryOverOps.getBaselineTimespan())) {
@@ -175,6 +188,7 @@ public class OverOpsServiceImpl implements OverOpsService {
         input.view = allEventsView.name;
         input.outputDrillDownSeries = true;
         input.mode = ReliabilityReportInput.DEFAULT_REPORT;
+
         return input;
     }
 
@@ -209,7 +223,7 @@ public class OverOpsServiceImpl implements OverOpsService {
     private int convertToMinutes(String timeWindow) {
 
         if (StringUtils.isEmpty(timeWindow)) {
-          return 0;
+            return 0;
         }
 
         if (timeWindow.toLowerCase().contains("d")) {
@@ -223,14 +237,6 @@ public class OverOpsServiceImpl implements OverOpsService {
         }
 
         return 0;
-    }
-
-    private static Collection<String> parseArrayString(String value, PrintStream printStream, String name) {
-        if (StringUtils.isEmpty(value)) {
-            return Collections.emptySet();
-        }
-
-        return Arrays.asList(value.trim().split(Pattern.quote(SEPERATOR)));
     }
 
     private void printInputs(QueryOverOps queryOverOps, PrintStream printStream, RegressionInput input) {
@@ -255,6 +261,30 @@ public class OverOpsServiceImpl implements OverOpsService {
         }
     }
 
+    private Collection<EventResult> getEvents(ApiClient apiClient, RegressionInput input, DateTime deploymentStart, PrintStream printStream) {
+        Collection<EventResult> events = RegressionUtil.getActiveEventVolume(apiClient, input, deploymentStart, printStream);
+        if (!CollectionUtil.safeIsEmpty(events)) {
+            return events;
+        } else {
+            events = RegressionUtil.getActiveEventVolume(apiClient, input, deploymentStart, printStream, true);
+            return CollectionUtil.safeIsEmpty(events) ? events : filterByLabel(events, input);
+        }
+    }
+
+    private List<EventResult> filterByLabel(Collection<EventResult> inputEvents, RegressionInput input) {
+        List<String> list = (List) input.applictations;
+        String appName = list.get(0) + ".app";
+        List<EventResult> result = new ArrayList();
+
+        for (EventResult eventResult : inputEvents) {
+            if (eventResult.labels != null && eventResult.labels.contains(appName)) {
+                result.add(eventResult);
+            }
+        }
+
+        return result;
+    }
+
     protected static class ApiClientObserver implements Observer {
 
         private final PrintStream printStream;
@@ -269,7 +299,7 @@ public class OverOpsServiceImpl implements OverOpsService {
         public void observe(Operation operation, String url, String request, String response, int responseCode, long time) {
             StringBuilder output = new StringBuilder();
 
-            output.append(String.valueOf(operation));
+            output.append(operation);
             output.append(" took ");
             output.append(time / 1000);
             output.append("ms for ");
@@ -282,29 +312,5 @@ public class OverOpsServiceImpl implements OverOpsService {
 
             printStream.println(output.toString());
         }
-    }
-
-    private Collection<EventResult> getEvents(ApiClient apiClient, RegressionInput input, DateTime deploymentStart, PrintStream printStream) {
-        Collection<EventResult> events = RegressionUtil.getActiveEventVolume(apiClient, input, deploymentStart, printStream);
-        if (!CollectionUtil.safeIsEmpty(events)) {
-            return events;
-        } else {
-            events = RegressionUtil.getActiveEventVolume(apiClient, input, deploymentStart, printStream, true);
-            return (Collection)(CollectionUtil.safeIsEmpty(events) ? events : filterByLabel(events, input));
-        }
-    }
-
-    private List<EventResult> filterByLabel(Collection<EventResult> inputEvents, RegressionInput input) {
-        List<String> list = (List)input.applictations;
-        String appName = (String)list.get(0) + ".app";
-        List<EventResult> result = new ArrayList();
-
-        for (EventResult eventResult : inputEvents) {
-            if (eventResult.labels != null && eventResult.labels.contains(appName)) {
-                result.add(eventResult);
-            }
-        }
-
-        return result;
     }
 }

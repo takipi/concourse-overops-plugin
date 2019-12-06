@@ -25,17 +25,13 @@ public class RenderService extends Render {
     @Override
     public boolean isStable() {
         boolean stable;
-        if(getMarkedUnstable() && getUnstable()) {
-            stable = false;
-        } else {
-            stable = true;
-        }
+        stable = !getMarkedUnstable() || !getUnstable();
         return stable;
     }
 
     @Override
     public void render() {
-        if(getMarkedUnstable() && getUnstable()) {
+        if (getMarkedUnstable() && getUnstable()) {
             this.context.getOutputStream().error(getSummary());
         } else if (getMarkedUnstable() && !getUnstable()) {
             this.context.getOutputStream().success(getSummary());
@@ -105,10 +101,10 @@ public class RenderService extends Render {
     private String getSummary() {
         if (getUnstable() && getMarkedUnstable()) {
             //the build is unstable when marking the build as unstable
-            return "OverOps has marked build "+ getDeploymentName() + " as unstable because the below quality gate(s) were not met.";
+            return "OverOps has marked build " + getDeploymentName() + " as unstable because the below quality gate(s) were not met.";
         } else if (!getMarkedUnstable() && getUnstable()) {
             //unstable build stable when NOT marking the build as unstable
-            return "OverOps has detected issues with build "+ getDeploymentName() + " but did not mark the build as unstable.";
+            return "OverOps has detected issues with build " + getDeploymentName() + " but did not mark the build as unstable.";
         } else {
             //stable build when marking the build as unstable
             return "Congratulations, build " + getDeploymentName() + " has passed all quality gates!";

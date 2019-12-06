@@ -18,10 +18,6 @@ import java.util.Arrays;
 public class ConcoursePlugin {
     private Context context;
 
-    public static void run(String[] args) {
-        new ConcoursePlugin(args);
-    }
-
     private ConcoursePlugin(String[] args) {
         boolean status = true;
         context = Context.getBuilder().setOutputStream(new AnsiWriter(System.err)).setObjectMapper(new ObjectMapper()).build();
@@ -47,6 +43,10 @@ public class ConcoursePlugin {
             context.getOutputStream().error("Trace: " + Arrays.toString(e.getStackTrace()));
         }
         System.exit(status ? 0 : 1);
+    }
+
+    public static void run(String[] args) {
+        new ConcoursePlugin(args);
     }
 
 }

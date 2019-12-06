@@ -22,7 +22,7 @@ public abstract class StringUtils {
         } else {
             int strLen = str.length();
 
-            for(int i = 0; i < strLen; ++i) {
+            for (int i = 0; i < strLen; ++i) {
                 if (!Character.isWhitespace(str.charAt(i))) {
                     return true;
                 }
@@ -33,6 +33,6 @@ public abstract class StringUtils {
     }
 
     public static boolean hasText(String str) {
-        return str != null && !str.isEmpty() && hasText((CharSequence)str);
+        return str != null && !str.isEmpty() && hasText((CharSequence) str);
     }
 }

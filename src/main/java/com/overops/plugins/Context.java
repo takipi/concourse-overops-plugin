@@ -10,6 +10,10 @@ public class Context {
 
     private ObjectMapper objectMapper;
 
+    public static ContextBuilder getBuilder() {
+        return new Context().new ContextBuilder();
+    }
+
     public OutputWriter getOutputStream() {
         return outputStream;
     }
@@ -20,10 +24,6 @@ public class Context {
 
     public void debugMode(boolean debug) {
 
-    }
-
-    public static ContextBuilder getBuilder() {
-        return new Context().new ContextBuilder();
     }
 
     public class ContextBuilder {

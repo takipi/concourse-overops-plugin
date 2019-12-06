@@ -10,6 +10,7 @@ import org.fusesource.jansi.AnsiConsole;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.fusesource.jansi.Ansi.ansi;
 
@@ -34,8 +35,9 @@ public class AnsiWriter implements OutputWriter {
 
     @Override
     public void debug(String message) {
-        if (debug)
+        if (debug) {
             printStream.println(ansi().fgBrightBlue().a(message).reset().toString());
+        }
     }
 
     @Override
@@ -70,7 +72,7 @@ public class AnsiWriter implements OutputWriter {
         AsciiTable at = new AsciiTable();
         at.addRule();
         at.addRow(s);
-        if (closeLine)  {
+        if (closeLine) {
             at.addRule();
         }
         printStream.println(at.render(130));
@@ -86,7 +88,7 @@ public class AnsiWriter implements OutputWriter {
         printStream.println(at.render(125));
         body.forEach(item -> {
             AsciiTable tbody = new AsciiTable();
-            tbody.addRow(item.getEventSummary(), item.getApplications(), item.getIntroducedBy(), item.getHits());
+            tbody.addRow(item.getEventSummary(), Optional.ofNullable(item.getApplications()).orElse(""), item.getIntroducedBy(), item.getHits());
             tbody.addRule();
             tbody.getRenderer().setCWC(new CWC_FixedWidth().add(85).add(15).add(15).add(10));
             printStream.println(tbody.render(125));
