@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cd $1 # enter the build directory
+
 function expand_param {
     if [ -z "$1" ]; then 
         return
@@ -93,7 +95,7 @@ java -jar /artifact/concourse-overops.jar \
 """
 
 if [ $OVEROPS_DEBUG == "true" ]; then
-    1>&2 ls -al
+    1>&2 find .
     1>&2 echo ${input//$OVEROPS_API_KEY/***}
     # print the executed command without exposing the API Key
     1>&2 echo ${cmd//$OVEROPS_API_KEY/***}
