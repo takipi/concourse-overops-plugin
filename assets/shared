@@ -66,6 +66,17 @@ OVEROPS_CRITICAL_REGRESSION_DELTA=$(expand_param "${OVEROPS_CRITICAL_REGRESSION_
 OVEROPS_APPLY_SEASONALITY=$(expand_param "${OVEROPS_APPLY_SEASONALITY:-$(jq -r '.source.applySeasonality | values' <<< $input)}")
 OVEROPS_DEBUG=$(expand_param "${OVEROPS_DEBUG:-$(jq -r '.source.debug | values' <<< $input)}")
 
+# setting version to the provided deployment name
+VERSION_OUT="{\"deployment\": \"${OVEROPS_DEPLOYMENT_NAME}\"}"
+
+# setting deploymentName to the resource version version
+DEPLOYMENT=$(jq -r '.version.deployment // empty' <<< $input)
+VERSION_IN='{}'
+if [ -n "$DEPLOYMENT" ]; then
+  VERSION_IN="{\"deployment\": \"$DEPLOYMENT\"}"
+  OVEROPS_DEPLOYMENT_NAME=$DEPLOYMENT
+fi
+
 # prepare the execution cmd adding the cli parameter only if it was provided as Concourse job parameter
 cmd="""
 java -jar /artifact/concourse-overops.jar \
@@ -99,11 +110,4 @@ if [ $OVEROPS_DEBUG == "true" ]; then
     1>&2 echo ${input//$OVEROPS_API_KEY/***}
     # print the executed command without exposing the API Key
     1>&2 echo ${cmd//$OVEROPS_API_KEY/***}
-fi
-
-GENERATED_TIMESTAMP_VERSION="{\"timestamp\": \"$(date +%s)\"}"
-TS=$(jq -r '.version.timestamp // empty' <<< $input)
-VERSION='{}'
-if [ -n "$TS" ]; then
-  VERSION="{\"timestamp\": \"$TS\"}"
 fi

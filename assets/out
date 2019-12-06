@@ -3,4 +3,4 @@
 source $CONCOURSE_RESOURCES/shared
 
 # generate timestamp bases version, which will automatically trigger the "in" script
-jq -n --argjson  version "$GENERATED_TIMESTAMP_VERSION" '{"version":$version}' 3>&1
+jq -n --argjson  version "$VERSION_OUT" '{"version":$version}' 3>&1
