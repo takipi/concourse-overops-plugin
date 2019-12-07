@@ -34,20 +34,58 @@ jobs:
   - name: demo
     serial: true
     plan:
-      - task: hello-world
+      - task: make-a-version-file
         config:
           platform: linux
           image_resource:
-            type: docker-image
+            type: registry-image
             source: { repository: busybox }
           run:
-            path: echo
+            path: sh
             args:
-              - hello world
+              - -exc
+              - date +%s > ./files/created_file
+          outputs:
+            - name: files
       - put: overops-report
+        inputs:
+          - files
+        params:
+          deploymentName:
+            file: ./files/created_file
+        get_params:
+          markUnstable: false
+          debug: false
 ```
 
 ## Configuration parameters
+
+### Reading parameters from files
+
+Any parameter can be read from existing file on filesystem with following construction:
+
+```yaml
+- put: overops-report
+  inputs:
+    - files
+  get_params:
+    param_name:
+      file: files/my/file
+```
+
+Where `inputs` are existing output from previous steps
+
+### `deploymentName`
+
+`deploymentName` is a parameter that used to version the resources and best to provide it dynamically from file (as example above)
+into `params` section.
+
+### All parameters references
+
+All of the following parameters can be provided globally in the Resource `source` section as well as can be overwritten on per step basis
+in the `get_params` section of `put` step.
+
+`deploymentName` is an exception and need to be provided in the `params` section of `put` step, as described in the example above.
 
 Parameter | Required | Default Value | Description
 ---------|----------|---------|---------
@@ -73,8 +111,6 @@ criticalRegressionDelta | false | 0 | The change in percentage between an event'
 applySeasonality | false | false | If peaks have been seen in baseline window, then this would be considered normal and not a regression. Should the plugin identify an equal or matching peak in the baseline time window, or two peaks of greater than 50% of the volume seen in the active window, the event will not be marked as a regression.
 debug | false | false | For advanced debugging purposes only
 
-This parameters need to be provided in the `source` configuration of your `resource`.
-
 ## ARC Links
 
 The ARC Links inside of the UI display after a build with the OverOps resource are not clickable they must be copy and pasted to be used.
@@ -85,10 +121,12 @@ The ARC Links inside of the UI display after a build with the OverOps resource a
 
 Checks OverOps API responsiveness
 
-### `in`
-
-Generates the report based on OverOps events, if `markUnstable` is set to `true` then fails the build, until reported issues are fixed.
-
 ### `out`
 
 Creates resource version and triggers the `in` script.
+
+**Always trigger resource via `put` step**
+
+### `in`
+
+Generates the report based on OverOps events, if `markUnstable` is set to `true` then fails the build, until reported issues are fixed.
