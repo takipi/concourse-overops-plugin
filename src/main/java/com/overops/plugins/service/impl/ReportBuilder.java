@@ -317,12 +317,20 @@ public class ReportBuilder {
 		boolean checkMaxEventGate = maxEventVolume != 0;
 		boolean checkUniqueEventGate = maxUniqueErrors != 0;
 		
+		boolean failedAPI = false;
+
 		//get the CICD quality report for all gates but Regressions
 		//initialize the QualityGateReport so we don't get null pointers below
 		QualityGateReport qualityGateReport = new QualityGateReport();
 		if (countGate || newEvents || resurfacedEvents || regexFilter != null) {
-			qualityGateReport = ProcessQualityGates.processCICDInputs(apiClient, input, newEvents, resurfacedEvents, 
+			try {
+				qualityGateReport = ProcessQualityGates.processCICDInputs(apiClient, input, newEvents, resurfacedEvents, 
 					regexFilter, topEventLimit, countGate, output, verbose);
+			} catch (Exception e) {
+				output.println("Error processing CI CD inputs " + e.getMessage());
+
+				failedAPI = true;
+			}
 		}
 		 
 		//run the regression gate
@@ -388,7 +396,8 @@ public class ReportBuilder {
 			checkCritical = true;
 		}
 		
-		boolean unstable = (hasRegressions)
+		boolean unstable = (failedAPI)
+				|| (hasRegressions)
 				|| (maxVolumeExceeded)
 				|| (maxUniqueErrorsExceeded)
 				|| (newErrors)
