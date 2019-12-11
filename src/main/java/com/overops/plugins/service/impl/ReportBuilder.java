@@ -327,7 +327,9 @@ public class ReportBuilder {
 				qualityGateReport = ProcessQualityGates.processCICDInputs(apiClient, input, newEvents, resurfacedEvents, 
 					regexFilter, topEventLimit, countGate, output, verbose);
 			} catch (Exception e) {
-				output.println("Error processing CI CD inputs " + e.getMessage());
+				if (output != null) { 
+					output.println("Error processing CI CD inputs " + e.getMessage());
+				}
 
 				failedAPI = true;
 			}
