@@ -21,8 +21,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <fileName>concourse-overops</fileName>
-    <version.takipi>2.23.0</version.takipi>
-    <version.fasterxml>2.9.9</version.fasterxml>
+    <version.takipi>2.30.0</version.takipi>
+    <version.fasterxml>2.10.1</version.fasterxml>
   </properties>
 
   <dependencies>
