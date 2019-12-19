@@ -14,6 +14,7 @@ public class RenderService extends Render {
 
     public RenderService(Context context, ReportBuilder.QualityReport report) {
         super(context);
+        
         this.qualityReport = report;
     }
 
@@ -25,7 +26,7 @@ public class RenderService extends Render {
     @Override
     public boolean isStable() {
         boolean stable;
-        if(getMarkedUnstable() && getUnstable()) {
+        if (getMarkedUnstable() && getUnstable()) {
             stable = false;
         } else {
             stable = true;
@@ -35,7 +36,7 @@ public class RenderService extends Render {
 
     @Override
     public void render() {
-        if(getMarkedUnstable() && getUnstable()) {
+        if (getMarkedUnstable() && getUnstable()) {
             this.context.getOutputStream().error(getSummary());
         } else if (getMarkedUnstable() && !getUnstable()) {
             this.context.getOutputStream().success(getSummary());

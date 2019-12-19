@@ -1,9 +1,9 @@
 #!/bin/bash
 
-set -e # exit on error
-
 source $CONCOURSE_RESOURCES/shared
+
+set -e
 
 metadata=$($cmd)
 
-jq -n --argjson metadata "$metadata" --argjson version "$VERSION" '{"version":$version,"metadata":$metadata}' 3>&1
+jq -n --argjson metadata "$metadata" --argjson version "$VERSION_IN" '{"version":$version,"metadata":$metadata}' 3>&1
