@@ -14,7 +14,7 @@ public class RenderService extends Render {
 
     public RenderService(Context context, ReportBuilder.QualityReport report) {
         super(context);
-        
+
         this.qualityReport = report;
     }
 
@@ -45,6 +45,8 @@ public class RenderService extends Render {
         } else {
             this.context.getOutputStream().success(getSummary());
         }
+
+        this.context.getOutputStream().block(Ansi.Color.WHITE, "Report Summary");
 
         if (getCheckNewEvents() && getPassedNewErrorGate()) {
             this.context.getOutputStream().block(Ansi.Color.GREEN, getNewErrorSummary(), "Nothing to report");
