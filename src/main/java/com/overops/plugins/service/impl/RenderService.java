@@ -1,10 +1,12 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
+import com.overops.plugins.model.SummaryRow;
 import com.overops.plugins.service.Render;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import org.fusesource.jansi.Ansi;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -46,7 +48,7 @@ public class RenderService extends Render {
             this.context.getOutputStream().success(getSummary());
         }
 
-        this.context.getOutputStream().block(Ansi.Color.WHITE, "Report Summary");
+        renderSummaryTable();
 
         if (getCheckNewEvents() && getPassedNewErrorGate()) {
             this.context.getOutputStream().block(Ansi.Color.GREEN, getNewErrorSummary(), "Nothing to report");
@@ -95,6 +97,26 @@ public class RenderService extends Render {
             this.context.getOutputStream().block(getRegressionSumarry(), Ansi.Color.RED, false);
             this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getRegressedEvents());
         }
+    }
+
+    private void renderSummaryTable() {
+        this.context.getOutputStream().println("", Ansi.Color.BLUE);
+        this.context.getOutputStream().println("Report Summary", Ansi.Color.BLUE);
+        this.context.getOutputStream().tableSummary(Arrays.asList("Gate", "Status", "Passed"), getSummaryCollection());
+    }
+
+    private List<SummaryRow> getSummaryCollection() {
+        ArrayList<SummaryRow> summaryRows = new ArrayList<>();
+        final String passedString =  "-";
+        boolean passedNewErrorGate = getPassedNewErrorGate();
+        boolean passedResurfacedErrorGate = getPassedResurfacedErrorGate();
+        boolean passedCriticalErrorGate = getPassedCriticalErrorGate();
+        boolean passedRegressedEvents = getPassedRegressedEvents();
+        summaryRows.add(new SummaryRow("New", passedNewErrorGate, passedNewErrorGate ? passedString : String.valueOf(getNewEvents().size())));
+        summaryRows.add(new SummaryRow("Resurfaced", passedResurfacedErrorGate, passedResurfacedErrorGate ? passedString : String.valueOf(getResurfacedEvents().size())));
+        summaryRows.add(new SummaryRow("Critical", passedCriticalErrorGate, passedCriticalErrorGate ? passedString : String.valueOf(getCriticalEvents().size())));
+        summaryRows.add(new SummaryRow("Increasing", passedRegressedEvents, passedRegressedEvents ? passedString : String.valueOf(getResurfacedEvents().size())));
+        return summaryRows;
     }
 
     private boolean getUnstable() {
