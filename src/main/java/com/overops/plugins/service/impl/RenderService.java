@@ -1,9 +1,9 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
+import com.overops.plugins.service.OutputWriter;
 import com.overops.plugins.service.Render;
 import com.takipi.api.client.util.cicd.OOReportEvent;
-import org.fusesource.jansi.Ansi;
 
 import java.util.Arrays;
 import java.util.List;
@@ -14,7 +14,7 @@ public class RenderService extends Render {
 
     public RenderService(Context context, ReportBuilder.QualityReport report) {
         super(context);
-        
+
         this.qualityReport = report;
     }
 
@@ -36,63 +36,79 @@ public class RenderService extends Render {
 
     @Override
     public void render() {
+        OutputWriter outputStream = this.context.getOutputStream();
+
         if (getMarkedUnstable() && getUnstable()) {
-            this.context.getOutputStream().error(getSummary());
+            outputStream.error(getSummary());
         } else if (getMarkedUnstable() && !getUnstable()) {
-            this.context.getOutputStream().success(getSummary());
+            outputStream.success(getSummary());
         } else if (!getMarkedUnstable() && getUnstable()) {
-            this.context.getOutputStream().yellow(getSummary());
+            outputStream.yellowFgPrintln(getSummary());
         } else {
-            this.context.getOutputStream().success(getSummary());
+            outputStream.success(getSummary());
         }
+
+        printSeparator();
 
         if (getCheckNewEvents() && getPassedNewErrorGate()) {
-            this.context.getOutputStream().block(Ansi.Color.GREEN, getNewErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getNewErrorSummary(), "Nothing to report");
         } else if (getCheckNewEvents() && !getPassedNewErrorGate()) {
-            this.context.getOutputStream().block(getNewErrorSummary(), Ansi.Color.RED, false);
-            this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getNewEvents());
+            outputStream.printStatementHeaders(getNewErrorSummary());
+            outputStream.table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getNewEvents());
         }
 
+        printSeparator();
+
         if (getCheckResurfacedEvents() && getPassedResurfacedErrorGate()) {
-            this.context.getOutputStream().block(Ansi.Color.GREEN, getResurfacedErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getResurfacedErrorSummary(), "Nothing to report");
         } else if (getCheckResurfacedEvents() && !getCheckResurfacedEvents()) {
-            this.context.getOutputStream().block(getResurfacedErrorSummary(), Ansi.Color.RED, false);
-            this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getResurfacedEvents());
+            outputStream.printStatementHeaders(getResurfacedErrorSummary());
+            outputStream.table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getResurfacedEvents());
         }
+
+        printSeparator();
 
         if (getCheckTotalErrors() || getCheckUniqueErrors()) {
             if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
-                this.context.getOutputStream().block(getTotalErrorSummary(), Ansi.Color.GREEN, false);
+                outputStream.printStatementHeaders(getTotalErrorSummary());
             } else if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
-                this.context.getOutputStream().block(getTotalErrorSummary(), Ansi.Color.RED, false);
+                outputStream.printStatementHeaders(getTotalErrorSummary());
             }
 
             if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
-                this.context.getOutputStream().block(getUniqueErrorSummary(), Ansi.Color.GREEN, false);
+                outputStream.printStatementHeaders(getUniqueErrorSummary());
             } else if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
-                this.context.getOutputStream().block(getUniqueErrorSummary(), Ansi.Color.RED, false);
+                outputStream.printStatementHeaders(getUniqueErrorSummary());
             }
 
             if (getHasTopErrors()) {
-                this.context.getOutputStream().table(Arrays.asList("Top Events Affecting Unique/Total Error Gates", "Application(s)", "Introduced by", "Volume"), getTopEvents());
+                outputStream.table(Arrays.asList("Top Events Affecting Unique/Total Error Gates", "Application(s)", "Introduced by", "Volume"), getTopEvents());
             } else {
-                this.context.getOutputStream().block("Nothing to report", Ansi.Color.BLUE, true);
+                outputStream.printStatementHeaders("Nothing to report");
             }
         }
 
+        printSeparator();
+
         if (getCheckCriticalErrors() && getPassedCriticalErrorGate()) {
-            this.context.getOutputStream().block(Ansi.Color.GREEN, getCriticalErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getCriticalErrorSummary(), "Nothing to report");
         } else if (getCheckCriticalErrors() && !getPassedCriticalErrorGate()) {
-            this.context.getOutputStream().block(getCriticalErrorSummary(), Ansi.Color.RED, false);
-            this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getCriticalEvents());
+            outputStream.printStatementHeaders(getCriticalErrorSummary());
+            outputStream.table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getCriticalEvents());
         }
 
+        printSeparator();
+
         if (getCheckRegressedErrors() && getPassedRegressedEvents()) {
-            this.context.getOutputStream().block(Ansi.Color.GREEN, getRegressionSumarry(), "Nothing to report");
+            outputStream.printStatementHeaders( getRegressionSumarry(), "Nothing to report");
         } else if (getCheckRegressedErrors() && !getPassedRegressedEvents()) {
-            this.context.getOutputStream().block(getRegressionSumarry(), Ansi.Color.RED, false);
-            this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getRegressedEvents());
+            outputStream.printStatementHeaders(getRegressionSumarry());
+            outputStream.table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getRegressedEvents());
         }
+    }
+
+    private void printSeparator() {
+        this.context.getOutputStream().yellowFgPrintln("");
     }
 
     private boolean getUnstable() {

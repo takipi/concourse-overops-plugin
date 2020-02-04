@@ -11,15 +11,13 @@ public interface OutputWriter {
 
     void success(String message);
 
-    void yellow(String message);
+    void yellowFgPrintln(String message);
 
     void print(String s, Ansi.Color color);
 
     void println(String s, Ansi.Color color);
 
-    void block(Ansi.Color color, String... s);
-
-    void block(String s, Ansi.Color color, boolean closeLine);
+    void printStatementHeaders(String... s);
 
     void table(List<String> headers, List<OOReportEvent> body);
 }
