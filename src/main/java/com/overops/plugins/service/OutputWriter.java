@@ -1,5 +1,6 @@
 package com.overops.plugins.service;
 
+import com.overops.plugins.model.SummaryRow;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import org.fusesource.jansi.Ansi;
 
@@ -20,4 +21,6 @@ public interface OutputWriter {
     void printStatementHeaders(String... s);
 
     void table(List<String> headers, List<OOReportEvent> body);
+
+    void tableSummary(List<String> headers, List<SummaryRow> body);
 }

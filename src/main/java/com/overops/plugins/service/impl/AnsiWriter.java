@@ -1,9 +1,11 @@
 package com.overops.plugins.service.impl;
 
+import com.overops.plugins.model.SummaryRow;
 import com.overops.plugins.service.OutputWriter;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import de.vandermeer.asciitable.AsciiTable;
 import de.vandermeer.asciitable.CWC_FixedWidth;
+import de.vandermeer.skb.interfaces.transformers.textformat.TextAlignment;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
@@ -14,7 +16,7 @@ import java.util.List;
 import static org.fusesource.jansi.Ansi.ansi;
 
 public class AnsiWriter implements OutputWriter {
-    PrintStream printStream;
+    private PrintStream printStream;
 
     public AnsiWriter(PrintStream printStream) {
         AnsiConsole.systemInstall();
@@ -74,6 +76,22 @@ public class AnsiWriter implements OutputWriter {
         });
         printStream.println("\n");
 
+    }
+
+    @Override
+    public void tableSummary(List<String> headers, List<SummaryRow> body) {
+        AsciiTable at = new AsciiTable();
+        at.addRule();
+        at.addRow(headers);
+        at.addRule();
+        body.forEach(item -> {
+            at.addRow(item.getGateName(), item.getGateStatus(), item.getTotal());
+            at.addRule();
+        });
+        at.setTextAlignment(TextAlignment.CENTER);
+        at.getRenderer().setCWC(new CWC_FixedWidth().add(20).add(20).add(20));
+        printStream.println(at.render(60));
+        printStream.println("\n");
     }
 
 }
