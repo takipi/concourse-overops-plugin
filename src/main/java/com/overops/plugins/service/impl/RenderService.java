@@ -1,10 +1,14 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
+import com.overops.plugins.model.OOReportYaml;
+import com.overops.plugins.model.QualityGateSummaryYaml;
 import com.overops.plugins.model.SummaryRow;
+import com.overops.plugins.model.YamlObject;
 import com.overops.plugins.service.Render;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import org.fusesource.jansi.Ansi;
+import com.overops.plugins.service.OutputWriter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,10 +17,11 @@ import java.util.List;
 public class RenderService extends Render {
 
     private ReportBuilder.QualityReport qualityReport;
+    private OutputWriter outputStream;
 
     public RenderService(Context context, ReportBuilder.QualityReport report) {
         super(context);
-
+        outputStream = this.context.getOutputStream();
         this.qualityReport = report;
     }
 
@@ -39,84 +44,107 @@ public class RenderService extends Render {
     @Override
     public void render() {
         if (getMarkedUnstable() && getUnstable()) {
-            this.context.getOutputStream().error(getSummary());
+            outputStream.error(getSummary());
         } else if (getMarkedUnstable() && !getUnstable()) {
-            this.context.getOutputStream().success(getSummary());
+            outputStream.success(getSummary());
         } else if (!getMarkedUnstable() && getUnstable()) {
-            this.context.getOutputStream().yellow(getSummary());
+            outputStream.yellowFgPrintln(getSummary());
         } else {
-            this.context.getOutputStream().success(getSummary());
+            outputStream.success(getSummary());
         }
 
-        renderSummaryTable();
+        printSeparator();
+
+        printQualityGatesSummary();
+
+        printSeparator();
 
         if (getCheckNewEvents() && getPassedNewErrorGate()) {
-            this.context.getOutputStream().block(Ansi.Color.GREEN, getNewErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getNewErrorSummary());
         } else if (getCheckNewEvents() && !getPassedNewErrorGate()) {
-            this.context.getOutputStream().block(getNewErrorSummary(), Ansi.Color.RED, false);
-            this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getNewEvents());
+            outputStream.printStatementHeaders(getNewErrorSummary());
+            outputStream.printYamlObject(new OOReportYaml(getNewEvents()));
         }
 
+        printSeparator();
+
         if (getCheckResurfacedEvents() && getPassedResurfacedErrorGate()) {
-            this.context.getOutputStream().block(Ansi.Color.GREEN, getResurfacedErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getResurfacedErrorSummary());
         } else if (getCheckResurfacedEvents() && !getCheckResurfacedEvents()) {
-            this.context.getOutputStream().block(getResurfacedErrorSummary(), Ansi.Color.RED, false);
-            this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getResurfacedEvents());
+            outputStream.printStatementHeaders(getResurfacedErrorSummary());
+            outputStream.printYamlObject(new OOReportYaml(getResurfacedEvents()));
         }
+
+        printSeparator();
 
         if (getCheckTotalErrors() || getCheckUniqueErrors()) {
             if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
-                this.context.getOutputStream().block(getTotalErrorSummary(), Ansi.Color.GREEN, false);
+                outputStream.printStatementHeaders(getTotalErrorSummary());
             } else if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
-                this.context.getOutputStream().block(getTotalErrorSummary(), Ansi.Color.RED, false);
+                outputStream.printStatementHeaders(getTotalErrorSummary());
             }
 
             if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
-                this.context.getOutputStream().block(getUniqueErrorSummary(), Ansi.Color.GREEN, false);
+                outputStream.printStatementHeaders(getUniqueErrorSummary());
             } else if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
-                this.context.getOutputStream().block(getUniqueErrorSummary(), Ansi.Color.RED, false);
+                outputStream.printStatementHeaders(getUniqueErrorSummary());
             }
 
             if (getHasTopErrors()) {
-                this.context.getOutputStream().table(Arrays.asList("Top Events Affecting Unique/Total Error Gates", "Application(s)", "Introduced by", "Volume"), getTopEvents());
-            } else {
-                this.context.getOutputStream().block("Nothing to report", Ansi.Color.BLUE, true);
+                outputStream.printYamlObject(new OOReportYaml(getTopEvents()));
             }
         }
 
+        printSeparator();
+
         if (getCheckCriticalErrors() && getPassedCriticalErrorGate()) {
-            this.context.getOutputStream().block(Ansi.Color.GREEN, getCriticalErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getCriticalErrorSummary());
         } else if (getCheckCriticalErrors() && !getPassedCriticalErrorGate()) {
-            this.context.getOutputStream().block(getCriticalErrorSummary(), Ansi.Color.RED, false);
-            this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getCriticalEvents());
+            outputStream.printStatementHeaders(getCriticalErrorSummary());
+            outputStream.printYamlObject(new OOReportYaml(getCriticalEvents()));
         }
+
+        printSeparator();
 
         if (getCheckRegressedErrors() && getPassedRegressedEvents()) {
-            this.context.getOutputStream().block(Ansi.Color.GREEN, getRegressionSumarry(), "Nothing to report");
+            outputStream.printStatementHeaders( getRegressionSumarry());
         } else if (getCheckRegressedErrors() && !getPassedRegressedEvents()) {
-            this.context.getOutputStream().block(getRegressionSumarry(), Ansi.Color.RED, false);
-            this.context.getOutputStream().table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getRegressedEvents());
+            outputStream.printStatementHeaders(getRegressionSumarry());
+            outputStream.printYamlObject(new OOReportYaml(getRegressedEvents()));
         }
     }
 
-    private void renderSummaryTable() {
-        this.context.getOutputStream().println("", Ansi.Color.BLUE);
-        this.context.getOutputStream().println("Report Summary", Ansi.Color.BLUE);
-        this.context.getOutputStream().tableSummary(Arrays.asList("Gate", "Status", "Passed"), getSummaryCollection());
+    private void printSeparator() {
+        outputStream.yellowFgPrintln("");
     }
 
-    private List<SummaryRow> getSummaryCollection() {
-        ArrayList<SummaryRow> summaryRows = new ArrayList<>();
+    private void printQualityGatesSummary() {
+        outputStream.printStatementHeaders("Report Summary");
+        outputStream.printYamlObject(getSummaryCollection(), (property, value) -> {
+            if (property.equals("status")) {
+                if (value.equals("Passed")) {
+                    return Ansi.Color.GREEN;
+                } else {
+                    return Ansi.Color.RED;
+                }
+            }
+
+            return null;
+        });
+    }
+
+    private YamlObject getSummaryCollection() {
+        QualityGateSummaryYaml qualityGateSummaryYaml = new QualityGateSummaryYaml("gates");
         final String passedString =  "-";
         boolean passedNewErrorGate = getPassedNewErrorGate();
         boolean passedResurfacedErrorGate = getPassedResurfacedErrorGate();
         boolean passedCriticalErrorGate = getPassedCriticalErrorGate();
         boolean passedRegressedEvents = getPassedRegressedEvents();
-        summaryRows.add(new SummaryRow("New", passedNewErrorGate, passedNewErrorGate ? passedString : String.valueOf(getNewEvents().size())));
-        summaryRows.add(new SummaryRow("Resurfaced", passedResurfacedErrorGate, passedResurfacedErrorGate ? passedString : String.valueOf(getResurfacedEvents().size())));
-        summaryRows.add(new SummaryRow("Critical", passedCriticalErrorGate, passedCriticalErrorGate ? passedString : String.valueOf(getCriticalEvents().size())));
-        summaryRows.add(new SummaryRow("Increasing", passedRegressedEvents, passedRegressedEvents ? passedString : String.valueOf(getResurfacedEvents().size())));
-        return summaryRows;
+        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("New", passedNewErrorGate, passedNewErrorGate ? passedString : String.valueOf(getNewEvents().size())));
+        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Resurfaced", passedResurfacedErrorGate, passedResurfacedErrorGate ? passedString : String.valueOf(getResurfacedEvents().size())));
+        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Critical", passedCriticalErrorGate, passedCriticalErrorGate ? passedString : String.valueOf(getCriticalEvents().size())));
+        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Increasing", passedRegressedEvents, passedRegressedEvents ? passedString : String.valueOf(getResurfacedEvents().size())));
+        return qualityGateSummaryYaml;
     }
 
     private boolean getUnstable() {
