@@ -1,7 +1,10 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
+import com.overops.plugins.model.OOReportYaml;
+import com.overops.plugins.model.QualityGateSummaryYaml;
 import com.overops.plugins.model.SummaryRow;
+import com.overops.plugins.model.YamlObject;
 import com.overops.plugins.service.Render;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import org.fusesource.jansi.Ansi;
@@ -14,10 +17,11 @@ import java.util.List;
 public class RenderService extends Render {
 
     private ReportBuilder.QualityReport qualityReport;
+    private OutputWriter outputStream;
 
     public RenderService(Context context, ReportBuilder.QualityReport report) {
         super(context);
-
+        outputStream = this.context.getOutputStream();
         this.qualityReport = report;
     }
 
@@ -39,8 +43,6 @@ public class RenderService extends Render {
 
     @Override
     public void render() {
-        OutputWriter outputStream = this.context.getOutputStream();
-
         if (getMarkedUnstable() && getUnstable()) {
             outputStream.error(getSummary());
         } else if (getMarkedUnstable() && !getUnstable()) {
@@ -53,24 +55,24 @@ public class RenderService extends Render {
 
         printSeparator();
 
-        renderSummaryTable();
+        printQualityGatesSummary();
 
         printSeparator();
 
         if (getCheckNewEvents() && getPassedNewErrorGate()) {
-            outputStream.printStatementHeaders( getNewErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getNewErrorSummary());
         } else if (getCheckNewEvents() && !getPassedNewErrorGate()) {
             outputStream.printStatementHeaders(getNewErrorSummary());
-            outputStream.table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getNewEvents());
+            outputStream.printYamlObject(new OOReportYaml(getNewEvents()));
         }
 
         printSeparator();
 
         if (getCheckResurfacedEvents() && getPassedResurfacedErrorGate()) {
-            outputStream.printStatementHeaders( getResurfacedErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getResurfacedErrorSummary());
         } else if (getCheckResurfacedEvents() && !getCheckResurfacedEvents()) {
             outputStream.printStatementHeaders(getResurfacedErrorSummary());
-            outputStream.table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getResurfacedEvents());
+            outputStream.printYamlObject(new OOReportYaml(getResurfacedEvents()));
         }
 
         printSeparator();
@@ -89,53 +91,60 @@ public class RenderService extends Render {
             }
 
             if (getHasTopErrors()) {
-                outputStream.table(Arrays.asList("Top Events Affecting Unique/Total Error Gates", "Application(s)", "Introduced by", "Volume"), getTopEvents());
-            } else {
-                outputStream.printStatementHeaders("Nothing to report");
+                outputStream.printYamlObject(new OOReportYaml(getTopEvents()));
             }
         }
 
         printSeparator();
 
         if (getCheckCriticalErrors() && getPassedCriticalErrorGate()) {
-            outputStream.printStatementHeaders( getCriticalErrorSummary(), "Nothing to report");
+            outputStream.printStatementHeaders( getCriticalErrorSummary());
         } else if (getCheckCriticalErrors() && !getPassedCriticalErrorGate()) {
             outputStream.printStatementHeaders(getCriticalErrorSummary());
-            outputStream.table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getCriticalEvents());
+            outputStream.printYamlObject(new OOReportYaml(getCriticalEvents()));
         }
 
         printSeparator();
 
         if (getCheckRegressedErrors() && getPassedRegressedEvents()) {
-            outputStream.printStatementHeaders( getRegressionSumarry(), "Nothing to report");
+            outputStream.printStatementHeaders( getRegressionSumarry());
         } else if (getCheckRegressedErrors() && !getPassedRegressedEvents()) {
             outputStream.printStatementHeaders(getRegressionSumarry());
-            outputStream.table(Arrays.asList("Event", "Application(s)", "Introduced by", "Volume"), getRegressedEvents());
+            outputStream.printYamlObject(new OOReportYaml(getRegressedEvents()));
         }
     }
 
     private void printSeparator() {
-        this.context.getOutputStream().yellowFgPrintln("");
+        outputStream.yellowFgPrintln("");
     }
 
-    private void renderSummaryTable() {
-        this.context.getOutputStream().println("", Ansi.Color.BLUE);
-        this.context.getOutputStream().println("Report Summary", Ansi.Color.BLUE);
-        this.context.getOutputStream().tableSummary(Arrays.asList("Gate", "Status", "Passed"), getSummaryCollection());
+    private void printQualityGatesSummary() {
+        outputStream.printStatementHeaders("Report Summary");
+        outputStream.printYamlObject(getSummaryCollection(), (property, value) -> {
+            if (property.equals("status")) {
+                if (value.equals("Passed")) {
+                    return Ansi.Color.GREEN;
+                } else {
+                    return Ansi.Color.RED;
+                }
+            }
+
+            return null;
+        });
     }
 
-    private List<SummaryRow> getSummaryCollection() {
-        ArrayList<SummaryRow> summaryRows = new ArrayList<>();
+    private YamlObject getSummaryCollection() {
+        QualityGateSummaryYaml qualityGateSummaryYaml = new QualityGateSummaryYaml("gates");
         final String passedString =  "-";
         boolean passedNewErrorGate = getPassedNewErrorGate();
         boolean passedResurfacedErrorGate = getPassedResurfacedErrorGate();
         boolean passedCriticalErrorGate = getPassedCriticalErrorGate();
         boolean passedRegressedEvents = getPassedRegressedEvents();
-        summaryRows.add(new SummaryRow("New", passedNewErrorGate, passedNewErrorGate ? passedString : String.valueOf(getNewEvents().size())));
-        summaryRows.add(new SummaryRow("Resurfaced", passedResurfacedErrorGate, passedResurfacedErrorGate ? passedString : String.valueOf(getResurfacedEvents().size())));
-        summaryRows.add(new SummaryRow("Critical", passedCriticalErrorGate, passedCriticalErrorGate ? passedString : String.valueOf(getCriticalEvents().size())));
-        summaryRows.add(new SummaryRow("Increasing", passedRegressedEvents, passedRegressedEvents ? passedString : String.valueOf(getResurfacedEvents().size())));
-        return summaryRows;
+        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("New", passedNewErrorGate, passedNewErrorGate ? passedString : String.valueOf(getNewEvents().size())));
+        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Resurfaced", passedResurfacedErrorGate, passedResurfacedErrorGate ? passedString : String.valueOf(getResurfacedEvents().size())));
+        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Critical", passedCriticalErrorGate, passedCriticalErrorGate ? passedString : String.valueOf(getCriticalEvents().size())));
+        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Increasing", passedRegressedEvents, passedRegressedEvents ? passedString : String.valueOf(getResurfacedEvents().size())));
+        return qualityGateSummaryYaml;
     }
 
     private boolean getUnstable() {

@@ -1,10 +1,11 @@
 package com.overops.plugins.service;
 
-import com.overops.plugins.model.SummaryRow;
+import com.overops.plugins.model.YamlObject;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import org.fusesource.jansi.Ansi;
 
 import java.util.List;
+import java.util.function.BiFunction;
 
 public interface OutputWriter {
 
@@ -22,5 +23,7 @@ public interface OutputWriter {
 
     void table(List<String> headers, List<OOReportEvent> body);
 
-    void tableSummary(List<String> headers, List<SummaryRow> body);
+    void printYamlObject(YamlObject yamlObject);
+
+    void printYamlObject(YamlObject yamlObject, BiFunction<String, String, Ansi.Color> getPropertyValueFgColor);
 }
