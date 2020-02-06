@@ -80,13 +80,13 @@ public class RenderService extends Render {
         if (getCheckTotalErrors() || getCheckUniqueErrors()) {
             if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
                 outputStream.printStatementHeaders(getTotalErrorSummary());
-            } else if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
+            } else if (getCheckTotalErrors() && !getPassedTotalErrorGate()) {
                 outputStream.printStatementHeaders(getTotalErrorSummary());
             }
 
             if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
                 outputStream.printStatementHeaders(getUniqueErrorSummary());
-            } else if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
+            } else if (getCheckUniqueErrors() && !getPassedUniqueErrorGate()) {
                 outputStream.printStatementHeaders(getUniqueErrorSummary());
             }
 
