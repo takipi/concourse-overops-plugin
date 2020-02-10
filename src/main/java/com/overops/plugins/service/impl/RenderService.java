@@ -32,13 +32,7 @@ public class RenderService extends Render {
 
     @Override
     public boolean isStable() {
-        boolean stable;
-        if (getMarkedUnstable() && getUnstable()) {
-            stable = false;
-        } else {
-            stable = true;
-        }
-        return stable;
+        return !(qualityReport.isMarkedUnstable() && qualityReport.getUnstable());
     }
 
     @Override
@@ -55,24 +49,24 @@ public class RenderService extends Render {
     }
 
     private void printTotalUniqueErrorsSection() {
-        if (getCheckTotalErrors() || getCheckUniqueErrors()) {
-            if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
-                outputStream.printStatementHeaders(getTotalErrorSummary());
-            } else if (getCheckTotalErrors() && !getPassedTotalErrorGate()) {
+        boolean includeTotalErrorsGate = qualityReport.isCheckVolumeGate();
+        boolean includeUniqueErrorsGate = qualityReport.isCheckUniqueGate();
+        boolean includeTotalOrUniqueErrorsGate = includeTotalErrorsGate || includeUniqueErrorsGate;
+        if (includeTotalOrUniqueErrorsGate) {
+            if (includeTotalErrorsGate) {
                 outputStream.printStatementHeaders(getTotalErrorSummary());
             }
 
-            if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
-                outputStream.printStatementHeaders(getUniqueErrorSummary());
-            } else if (getCheckUniqueErrors() && !getPassedUniqueErrorGate()) {
+            if (includeUniqueErrorsGate) {
                 outputStream.printStatementHeaders(getUniqueErrorSummary());
             }
 
             if (getHasTopErrors()) {
                 outputStream.printYamlObject(new OOReportYaml(getTopEvents()));
             }
+
+            printSeparator();
         }
-        printSeparator();
     }
 
     private void initQualityGates() {
@@ -111,15 +105,27 @@ public class RenderService extends Render {
     }
 
     private void printMainQualityGateStatusSection() {
-        if (getMarkedUnstable() && getUnstable()) {
-            outputStream.error(getSummary());
-        } else if (getMarkedUnstable() && !getUnstable()) {
-            outputStream.success(getSummary());
-        } else if (!getMarkedUnstable() && getUnstable()) {
-            outputStream.yellowFgPrintln(getSummary());
+        boolean toMarkUnstable = qualityReport.isMarkedUnstable();
+        boolean isActuallyUnstable = qualityReport.getUnstable();
+        String deploymentName = getDeploymentName();
+        String passedSummary = "Congratulations, build " + deploymentName + " has passed all quality gates!";
+        String unstableBuildWithToMarkUnstableSetSummary = "OverOps has marked build " + deploymentName + " as unstable because the below quality gate(s) were not met.";
+        String unstableBuildWithToMarkUnstableNotSetSummary = "OverOps has detected issues with build " + deploymentName + " but did not mark the build as unstable.";
+
+        if (toMarkUnstable) {
+            if (isActuallyUnstable) {
+                outputStream.error(unstableBuildWithToMarkUnstableSetSummary);
+            } else {
+                outputStream.success(passedSummary);
+            }
         } else {
-            outputStream.success(getSummary());
+            if (isActuallyUnstable) {
+                outputStream.yellowFgPrintln(unstableBuildWithToMarkUnstableNotSetSummary);
+            } else {
+                outputStream.success(passedSummary);
+            }
         }
+
         printSeparator();
     }
 
@@ -169,40 +175,14 @@ public class RenderService extends Render {
         return qualityGateSummaryYaml;
     }
 
-    private boolean getUnstable() {
-        return qualityReport.getUnstable();
-    }
-
-    private boolean getMarkedUnstable() {
-        return qualityReport.isMarkedUnstable();
-    }
-
-    private String getSummary() {
-        if (getUnstable() && getMarkedUnstable()) {
-            //the build is unstable when marking the build as unstable
-            return "OverOps has marked build " + getDeploymentName() + " as unstable because the below quality gate(s) were not met.";
-        } else if (!getMarkedUnstable() && getUnstable()) {
-            //unstable build stable when NOT marking the build as unstable
-            return "OverOps has detected issues with build " + getDeploymentName() + " but did not mark the build as unstable.";
-        } else {
-            //stable build when marking the build as unstable
-            return "Congratulations, build " + getDeploymentName() + " has passed all quality gates!";
-        }
-    }
-
     private String getDeploymentName() {
-        String value = qualityReport.getInput().deployments.toString();
-        value = value.replace("[", "");
-        value = value.replace("]", "");
-        return value;
-    }
-
-    private boolean getCheckTotalErrors() {
-        return qualityReport.isCheckVolumeGate();
+        return qualityReport.getInput().deployments.toString()
+                .replace("[", "")
+                .replace("]", "");
     }
 
     private boolean getPassedTotalErrorGate() {
-        return getCheckTotalErrors() && (qualityReport.getEventVolume() > 0 && qualityReport.getEventVolume() < qualityReport.getMaxEventVolume());
+        return qualityReport.getEventVolume() > 0 && qualityReport.getEventVolume() < qualityReport.getMaxEventVolume();
 
     }
 
@@ -216,17 +196,8 @@ public class RenderService extends Render {
         return null;
     }
 
-    private boolean getCheckUniqueErrors() {
-        return qualityReport.isCheckUniqueGate();
-    }
-
-    private boolean getHasTopErrors() {
-        return !getPassedTotalErrorGate() || !getPassedUniqueErrorGate();
-    }
-
     private boolean getPassedUniqueErrorGate() {
-        return getCheckUniqueErrors() && (qualityReport.getUniqueEventsCount() > 0 && qualityReport.getUniqueEventsCount() < qualityReport.getMaxUniqueVolume());
-
+        return qualityReport.getUniqueEventsCount() > 0 && qualityReport.getUniqueEventsCount() < qualityReport.getMaxUniqueVolume();
     }
 
     private String getUniqueErrorSummary() {
@@ -237,6 +208,10 @@ public class RenderService extends Render {
         }
 
         return null;
+    }
+
+    private boolean getHasTopErrors() {
+        return !getPassedTotalErrorGate() || !getPassedUniqueErrorGate();
     }
 
     private List<OOReportEvent> getTopEvents() {
