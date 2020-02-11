@@ -349,7 +349,7 @@ public class ReportBuilder {
 			regressions = getAllRegressions(apiClient, input, rateRegression, reportVolume.filter);
 			if (regressions != null && regressions.size() > 0) {
 				hasRegressions = true;
-				replaceSourceId2(regressions);
+				replaceSourceId(regressions);
 			}
 		}
 
@@ -367,31 +367,10 @@ public class ReportBuilder {
 			maxUniqueErrorsExceeded = false;
 		}
 
-		//new error gate
-		boolean newErrors = false;
-		if (qualityGateReport.getNewErrors() != null && qualityGateReport.getNewErrors().size() > 0) {
-			newErrors = true;
-			replaceSourceId(qualityGateReport.getNewErrors());
-		}
-
-		//resurfaced error gate
-		boolean resurfaced = false;
-		if (qualityGateReport.getResurfacedErrors() != null && qualityGateReport.getResurfacedErrors().size() > 0) {
-			resurfaced = true;
-			replaceSourceId(qualityGateReport.getResurfacedErrors());
-		}
-
-		//critical error gate
-		boolean critical = false;
-		if (qualityGateReport.getCriticalErrors() != null  && qualityGateReport.getCriticalErrors().size() > 0) {
-			critical = true;
-			replaceSourceId(qualityGateReport.getCriticalErrors());
-		}
-
-		//top errors
-		if (qualityGateReport.getTopErrors() != null  && qualityGateReport.getTopErrors().size() > 0) {
-			replaceSourceId(qualityGateReport.getTopErrors());
-		}
+		boolean newErrors = processQualityGateErrors(qualityGateReport.getNewErrors());
+		boolean resurfaced = processQualityGateErrors(qualityGateReport.getResurfacedErrors());
+		boolean critical = processQualityGateErrors(qualityGateReport.getCriticalErrors());
+		processQualityGateErrors(qualityGateReport.getTopErrors());
 
 		boolean checkCritical = false;
 		if (input.criticalExceptionTypes != null && input.criticalExceptionTypes.size() > 0) {
@@ -413,33 +392,30 @@ public class ReportBuilder {
 				checkUniqueEventGate, runRegressions, maxEventVolume, maxUniqueErrors, markedUnstable);
 	}
 
-	//for each event, replace the source ID in the ARC link with the number 4 (which means Jenkins)
-	private static void replaceSourceId (List<OOReportEvent> events) {
+    private static boolean processQualityGateErrors(List<OOReportEvent> events) {
+	    boolean errorsExist = false;
+        if (events != null && events.size() > 0) {
+            errorsExist = true;
+            replaceSourceId(events);
+        }
+        return errorsExist;
+    }
+
+    /**
+     * for each event, replace the source ID in the ARC link with the number 4 (which means Jenkins)
+     * see: https://overopshq.atlassian.net/wiki/spaces/PP/pages/1529872385/Hit+Sources
+     * @param events
+     */
+	private static void replaceSourceId (List<? extends OOReportEvent> events) {
+        String match = "&source=(\\d)+"; // matches at least one digit
+        String replace = "&source=4";    // replace with 4
+
 		for (OOReportEvent ooReportEvent : events) {
-			String arcLink = replaceSourceIdInArcLink(ooReportEvent.getARCLink());
-			ooReportEvent.setArcLink(arcLink);
+            String arcLink = ooReportEvent.getARCLink();
+            if (arcLink != null) {
+                ooReportEvent.setArcLink(arcLink.replaceAll(match, replace));
+            }
 		}
-	}
-
-	//for each event, replace the source ID in the ARC link with the number 4 (which means Jenkins)
-	private static void replaceSourceId2 (List<OOReportRegressedEvent> events) {
-		for (OOReportEvent ooReportEvent : events) {
-			String arcLink = replaceSourceIdInArcLink(ooReportEvent.getARCLink());
-			ooReportEvent.setArcLink(arcLink);
-		}
-	}
-
-	private static String replaceSourceIdInArcLink(String arcLink) {
-		if (arcLink == null) {
-			return arcLink;
-		}
-		String returnString;
-		CharSequence target = "source=43";
-		CharSequence replacement = "source=4";
-
-		returnString = arcLink.replace(target, replacement);
-
-		return returnString;
 	}
 
 	private static List<OOReportRegressedEvent> getAllRegressions(ApiClient apiClient,

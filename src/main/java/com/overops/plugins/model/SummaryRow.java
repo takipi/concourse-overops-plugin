@@ -8,7 +8,7 @@ public class SummaryRow {
     public SummaryRow(QualityGate qualityGate) {
         this.gateName = qualityGate.getSummaryGateName();
         this.passed = qualityGate.passed();
-        this.total = passed ? "-" : String.valueOf(qualityGate.getReportCollection().size());
+        this.total = qualityGate.getReportCollection() != null ? String.valueOf(qualityGate.getReportCollection().size()) : "0";
     }
 
     public String getGateName() {
