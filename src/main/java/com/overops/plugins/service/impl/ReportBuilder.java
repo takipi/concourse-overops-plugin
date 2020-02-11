@@ -408,7 +408,7 @@ public class ReportBuilder {
      */
 	private static void replaceSourceId (List<? extends OOReportEvent> events) {
         String match = "&source=(\\d)+"; // matches at least one digit
-        String replace = "&source=4";    // replace with 4
+        String replace = "&source=47";    // replace with 4
 
 		for (OOReportEvent ooReportEvent : events) {
             String arcLink = ooReportEvent.getARCLink();
