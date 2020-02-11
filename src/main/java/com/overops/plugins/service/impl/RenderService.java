@@ -1,23 +1,23 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
-import com.overops.plugins.model.OOReportYaml;
-import com.overops.plugins.model.QualityGateSummaryYaml;
-import com.overops.plugins.model.SummaryRow;
-import com.overops.plugins.model.YamlObject;
+import com.overops.plugins.model.*;
 import com.overops.plugins.service.Render;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import org.fusesource.jansi.Ansi;
 import com.overops.plugins.service.OutputWriter;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class RenderService extends Render {
 
     private ReportBuilder.QualityReport qualityReport;
     private OutputWriter outputStream;
+    private QualityGate criticalQualityGate;
+    private QualityGate newQualityGate;
+    private QualityGate resurfacedQualityGate;
+    private QualityGate increasingQualityGate;
 
     public RenderService(Context context, ReportBuilder.QualityReport report) {
         super(context);
@@ -32,95 +32,124 @@ public class RenderService extends Render {
 
     @Override
     public boolean isStable() {
-        boolean stable;
-        if (getMarkedUnstable() && getUnstable()) {
-            stable = false;
-        } else {
-            stable = true;
-        }
-        return stable;
+        return !(qualityReport.isMarkedUnstable() && qualityReport.getUnstable());
     }
 
     @Override
     public void render() {
-        if (getMarkedUnstable() && getUnstable()) {
-            outputStream.error(getSummary());
-        } else if (getMarkedUnstable() && !getUnstable()) {
-            outputStream.success(getSummary());
-        } else if (!getMarkedUnstable() && getUnstable()) {
-            outputStream.yellowFgPrintln(getSummary());
-        } else {
-            outputStream.success(getSummary());
-        }
+        initQualityGates();
 
-        printSeparator();
+        printMainQualityGateStatusSection();
+        printQualityGatesSummarySection();
+        printQualityGateSection(newQualityGate);
+        printQualityGateSection(resurfacedQualityGate);
+        printTotalUniqueErrorsSection();
+        printQualityGateSection(criticalQualityGate);
+        printQualityGateSection(increasingQualityGate);
+    }
 
-        printQualityGatesSummary();
-
-        printSeparator();
-
-        if (getCheckNewEvents() && getPassedNewErrorGate()) {
-            outputStream.printStatementHeaders( getNewErrorSummary());
-        } else if (getCheckNewEvents() && !getPassedNewErrorGate()) {
-            outputStream.printStatementHeaders(getNewErrorSummary());
-            outputStream.printYamlObject(new OOReportYaml(getNewEvents()));
-        }
-
-        printSeparator();
-
-        if (getCheckResurfacedEvents() && getPassedResurfacedErrorGate()) {
-            outputStream.printStatementHeaders( getResurfacedErrorSummary());
-        } else if (getCheckResurfacedEvents() && !getCheckResurfacedEvents()) {
-            outputStream.printStatementHeaders(getResurfacedErrorSummary());
-            outputStream.printYamlObject(new OOReportYaml(getResurfacedEvents()));
-        }
-
-        printSeparator();
-
-        if (getCheckTotalErrors() || getCheckUniqueErrors()) {
-            if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
-                outputStream.printStatementHeaders(getTotalErrorSummary());
-            } else if (getCheckTotalErrors() && getPassedTotalErrorGate()) {
+    private void printTotalUniqueErrorsSection() {
+        boolean includeTotalErrorsGate = qualityReport.isCheckVolumeGate();
+        boolean includeUniqueErrorsGate = qualityReport.isCheckUniqueGate();
+        boolean includeTotalOrUniqueErrorsGate = includeTotalErrorsGate || includeUniqueErrorsGate;
+        if (includeTotalOrUniqueErrorsGate) {
+            if (includeTotalErrorsGate) {
                 outputStream.printStatementHeaders(getTotalErrorSummary());
             }
 
-            if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
-                outputStream.printStatementHeaders(getUniqueErrorSummary());
-            } else if (getCheckUniqueErrors() && getPassedUniqueErrorGate()) {
+            if (includeUniqueErrorsGate) {
                 outputStream.printStatementHeaders(getUniqueErrorSummary());
             }
 
             if (getHasTopErrors()) {
                 outputStream.printYamlObject(new OOReportYaml(getTopEvents()));
             }
+
+            printSeparator();
+        }
+    }
+
+    private void initQualityGates() {
+        newQualityGate = new QualityGate.Builder()
+                .setGateName("New Error")
+                .setErrorsName("new errors")
+                .setSummaryGateName("New")
+                .setIncludeIntoReport(qualityReport.isCheckNewGate())
+                .setReportCollection(qualityReport.getNewIssues())
+                .build();
+
+        resurfacedQualityGate = new QualityGate.Builder()
+                .setGateName("Resurfaced Error")
+                .setErrorsName("resurfaced errors")
+                .setSummaryGateName("Resurfaced")
+                .setIncludeIntoReport(qualityReport.isCheckResurfacedGate())
+                .setReportCollection(qualityReport.getResurfacedErrors())
+                .build();
+
+        criticalQualityGate = new QualityGate.Builder()
+                .setGateName("Critical Error")
+                .setErrorsName("critical errors")
+                .setSummaryGateName("Critical")
+                .setIncludeIntoReport(qualityReport.isCheckCriticalGate())
+                .setReportCollection(qualityReport.getCriticalErrors())
+                .build();
+
+        increasingQualityGate = new QualityGate.Builder()
+                .setGateName("Increasing Error")
+                .setPassedSummary("Increasing Quality Gate: Passed, OverOps did not detect any increasing errors in the current build against the baseline of " + qualityReport.getInput().baselineTime + ".")
+                .setNotPassedSummary("Increasing Quality Gate: Failed, OverOps detected increasing errors in the current build against the baseline of " + qualityReport.getInput().baselineTime + ".")
+                .setSummaryGateName("Increasing")
+                .setIncludeIntoReport(qualityReport.isCheckRegressionGate())
+                .setReportCollection(qualityReport.getRegressions())
+                .build();
+    }
+
+    private void printMainQualityGateStatusSection() {
+        boolean toMarkUnstable = qualityReport.isMarkedUnstable();
+        boolean isActuallyUnstable = qualityReport.getUnstable();
+        String deploymentName = getDeploymentName();
+        String passedSummary = "Congratulations, build " + deploymentName + " has passed all quality gates!";
+        String unstableBuildWithToMarkUnstableSetSummary = "OverOps has marked build " + deploymentName + " as unstable because the below quality gate(s) were not met.";
+        String unstableBuildWithToMarkUnstableNotSetSummary = "OverOps has detected issues with build " + deploymentName + " but did not mark the build as unstable.";
+
+        if (toMarkUnstable) {
+            if (isActuallyUnstable) {
+                outputStream.error(unstableBuildWithToMarkUnstableSetSummary);
+            } else {
+                outputStream.success(passedSummary);
+            }
+        } else {
+            if (isActuallyUnstable) {
+                outputStream.yellowFgPrintln(unstableBuildWithToMarkUnstableNotSetSummary);
+            } else {
+                outputStream.success(passedSummary);
+            }
         }
 
         printSeparator();
+    }
 
-        if (getCheckCriticalErrors() && getPassedCriticalErrorGate()) {
-            outputStream.printStatementHeaders( getCriticalErrorSummary());
-        } else if (getCheckCriticalErrors() && !getPassedCriticalErrorGate()) {
-            outputStream.printStatementHeaders(getCriticalErrorSummary());
-            outputStream.printYamlObject(new OOReportYaml(getCriticalEvents()));
+    private void printQualityGateSection(QualityGate qualityGate) {
+        YamlObject qualityGateYamlRepresentation = new OOReportYaml(qualityGate.getReportCollection());
+        if (qualityGate.isIncludeIntoReport()) {
+            if (qualityGate.passed()) {
+                outputStream.printStatementHeaders(qualityGate.getSummary());
+            } else {
+                outputStream.printStatementHeaders(qualityGate.getSummary());
+                outputStream.printYamlObject(qualityGateYamlRepresentation);
+            }
         }
 
         printSeparator();
-
-        if (getCheckRegressedErrors() && getPassedRegressedEvents()) {
-            outputStream.printStatementHeaders( getRegressionSumarry());
-        } else if (getCheckRegressedErrors() && !getPassedRegressedEvents()) {
-            outputStream.printStatementHeaders(getRegressionSumarry());
-            outputStream.printYamlObject(new OOReportYaml(getRegressedEvents()));
-        }
     }
 
     private void printSeparator() {
         outputStream.yellowFgPrintln("");
     }
 
-    private void printQualityGatesSummary() {
+    private void printQualityGatesSummarySection() {
         outputStream.printStatementHeaders("Report Summary");
-        outputStream.printYamlObject(getSummaryCollection(), (property, value) -> {
+        outputStream.printYamlObject(getSummaryYamlObject(), (property, value) -> {
             if (property.equals("status")) {
                 if (value.equals("Passed")) {
                     return Ansi.Color.GREEN;
@@ -131,142 +160,29 @@ public class RenderService extends Render {
 
             return null;
         });
+        printSeparator();
     }
 
-    private YamlObject getSummaryCollection() {
+    private YamlObject getSummaryYamlObject() {
         QualityGateSummaryYaml qualityGateSummaryYaml = new QualityGateSummaryYaml("gates");
-        final String passedString =  "-";
-        boolean passedNewErrorGate = getPassedNewErrorGate();
-        boolean passedResurfacedErrorGate = getPassedResurfacedErrorGate();
-        boolean passedCriticalErrorGate = getPassedCriticalErrorGate();
-        boolean passedRegressedEvents = getPassedRegressedEvents();
-        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("New", passedNewErrorGate, passedNewErrorGate ? passedString : String.valueOf(getNewEvents().size())));
-        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Resurfaced", passedResurfacedErrorGate, passedResurfacedErrorGate ? passedString : String.valueOf(getResurfacedEvents().size())));
-        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Critical", passedCriticalErrorGate, passedCriticalErrorGate ? passedString : String.valueOf(getCriticalEvents().size())));
-        qualityGateSummaryYaml.addSummaryRow(new SummaryRow("Increasing", passedRegressedEvents, passedRegressedEvents ? passedString : String.valueOf(getResurfacedEvents().size())));
+
+        Stream.of(newQualityGate, resurfacedQualityGate, criticalQualityGate, increasingQualityGate).forEach( qualityGate -> {
+            if (qualityGate.isIncludeIntoReport()) {
+                qualityGateSummaryYaml.addSummaryRow(new SummaryRow(qualityGate));
+            }
+        });
+
         return qualityGateSummaryYaml;
     }
 
-    private boolean getUnstable() {
-        return qualityReport.getUnstable();
-    }
-
-    private boolean getMarkedUnstable() {
-        return qualityReport.isMarkedUnstable();
-    }
-
-    private String getSummary() {
-        if (getUnstable() && getMarkedUnstable()) {
-            //the build is unstable when marking the build as unstable
-            return "OverOps has marked build "+ getDeploymentName() + " as unstable because the below quality gate(s) were not met.";
-        } else if (!getMarkedUnstable() && getUnstable()) {
-            //unstable build stable when NOT marking the build as unstable
-            return "OverOps has detected issues with build "+ getDeploymentName() + " but did not mark the build as unstable.";
-        } else {
-            //stable build when marking the build as unstable
-            return "Congratulations, build " + getDeploymentName() + " has passed all quality gates!";
-        }
-    }
-
     private String getDeploymentName() {
-        String value = qualityReport.getInput().deployments.toString();
-        value = value.replace("[", "");
-        value = value.replace("]", "");
-        return value;
-    }
-
-    private boolean getPassedNewErrorGate() {
-        return getCheckNewEvents() && !getNewErrorsExist();
-
-    }
-
-    private boolean getCheckNewEvents() {
-        return qualityReport.isCheckNewGate();
-    }
-
-    private String getNewErrorSummary() {
-        if (getNewEvents() != null && getNewEvents().size() > 0) {
-            return "New Error Gate: Failed, OverOps detected " + qualityReport.getNewIssues().size() + " new error(s) in your build.";
-        } else if (qualityReport.isCheckNewGate()) {
-            return "New Error Gate: Passed, OverOps did not detect any new errors in your build.";
-        }
-
-        return null;
-    }
-
-    private boolean getNewErrorsExist() {
-        return getNewEvents() != null && getNewEvents().size() > 0;
-    }
-
-    private List<OOReportEvent> getNewEvents() {
-        return qualityReport.getNewIssues();
-    }
-
-    private boolean getPassedResurfacedErrorGate() {
-        return getCheckResurfacedEvents() && !getResurfacedErrorsExist();
-
-    }
-
-    private boolean getResurfacedErrorsExist() {
-        return getResurfacedEvents() != null && getResurfacedEvents().size() > 0;
-    }
-
-    private boolean getCheckResurfacedEvents() {
-        return qualityReport.isCheckResurfacedGate();
-    }
-
-    private String getResurfacedErrorSummary() {
-        if (getResurfacedEvents() != null && getResurfacedEvents().size() > 0) {
-            return "Resurfaced Error Gate: Failed, OverOps detected " + qualityReport.getResurfacedErrors().size() + " resurfaced errors in your build.";
-        } else if (qualityReport.isCheckResurfacedGate()) {
-            return "Resurfaced Error Gate: Passed, OverOps did not detect any resurfaced errors in your build.";
-        }
-
-        return null;
-    }
-
-    private List<OOReportEvent> getResurfacedEvents() {
-        return qualityReport.getResurfacedErrors();
-    }
-
-    private boolean getCheckCriticalErrors() {
-        return qualityReport.isCheckCriticalGate();
-    }
-
-    private boolean getPassedCriticalErrorGate() {
-        return getCheckCriticalErrors() && !getCriticalErrorsExist();
-
-    }
-
-    private boolean getCriticalErrorsExist() {
-        return getCriticalEvents() != null && getCriticalEvents().size() > 0;
-    }
-
-    private String getCriticalErrorSummary() {
-        if (getCriticalEvents() != null && getCriticalEvents().size() > 0) {
-            return "Critical Error Gate: Failed, OverOps detected " + qualityReport.getCriticalErrors().size() + " critical errors in your build.";
-        } else if (qualityReport.isCheckCriticalGate()) {
-            return "Critical Error Gate: Passed, OverOps did not detect any critical errors in your build.";
-        }
-
-        return null;
-    }
-
-    private List<OOReportEvent> getCriticalEvents() {
-        return qualityReport.getCriticalErrors();
-    }
-
-    //this will serve as a check for either unique or total error gates
-    private boolean getCountGates() {
-        return getCheckUniqueErrors() || getCheckTotalErrors();
-    }
-
-    private boolean getCheckTotalErrors() {
-        return qualityReport.isCheckVolumeGate();
+        return qualityReport.getInput().deployments.toString()
+                .replace("[", "")
+                .replace("]", "");
     }
 
     private boolean getPassedTotalErrorGate() {
-        return getCheckTotalErrors() && (qualityReport.getEventVolume() > 0 && qualityReport.getEventVolume() < qualityReport.getMaxEventVolume());
+        return qualityReport.getEventVolume() > 0 && qualityReport.getEventVolume() < qualityReport.getMaxEventVolume();
 
     }
 
@@ -280,17 +196,8 @@ public class RenderService extends Render {
         return null;
     }
 
-    private boolean getCheckUniqueErrors() {
-        return qualityReport.isCheckUniqueGate();
-    }
-
-    private boolean getHasTopErrors() {
-        return !getPassedTotalErrorGate() || !getPassedUniqueErrorGate();
-    }
-
     private boolean getPassedUniqueErrorGate() {
-        return getCheckUniqueErrors() && (qualityReport.getUniqueEventsCount() > 0 && qualityReport.getUniqueEventsCount() < qualityReport.getMaxUniqueVolume());
-
+        return qualityReport.getUniqueEventsCount() > 0 && qualityReport.getUniqueEventsCount() < qualityReport.getMaxUniqueVolume();
     }
 
     private String getUniqueErrorSummary() {
@@ -303,29 +210,11 @@ public class RenderService extends Render {
         return null;
     }
 
+    private boolean getHasTopErrors() {
+        return !getPassedTotalErrorGate() || !getPassedUniqueErrorGate();
+    }
+
     private List<OOReportEvent> getTopEvents() {
         return qualityReport.getTopErrors();
-    }
-
-    private String getRegressionSumarry() {
-        if (!getPassedRegressedEvents()) {
-            return "Increasing Quality Gate: Failed, OverOps detected incressing errors in the current build against the baseline of " + qualityReport.getInput().baselineTime;
-        } else if (getPassedRegressedEvents()) {
-            return "Increasing Quality Gate: Passed, OverOps did not detect any increasing errors in the current build against the baseline of " + qualityReport.getInput().baselineTime;
-        }
-
-        return null;
-    }
-
-    private boolean getCheckRegressedErrors() {
-        return qualityReport.isCheckRegressionGate();
-    }
-
-    private boolean getPassedRegressedEvents() {
-        return !getCheckRegressedErrors() || qualityReport.getRegressions() == null || qualityReport.getRegressions().size() <= 0;
-    }
-
-    private List<OOReportEvent> getRegressedEvents() {
-        return qualityReport.getAllIssues();
     }
 }

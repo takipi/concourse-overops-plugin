@@ -5,12 +5,14 @@ public class SummaryRow {
     private String total;
     private boolean passed;
 
-    public String getGateName() {
-        return gateName;
+    public SummaryRow(QualityGate qualityGate) {
+        this.gateName = qualityGate.getSummaryGateName();
+        this.passed = qualityGate.passed();
+        this.total = qualityGate.getReportCollection() != null ? String.valueOf(qualityGate.getReportCollection().size()) : "0";
     }
 
-    public void setGateName(String gateName) {
-        this.gateName = gateName;
+    public String getGateName() {
+        return gateName;
     }
 
     public String getGateStatus() {
@@ -19,23 +21,5 @@ public class SummaryRow {
 
     public String getTotal() {
         return total;
-    }
-
-    public void setTotal(String total) {
-        this.total = total;
-    }
-
-    public boolean isPassed() {
-        return passed;
-    }
-
-    public void setPassed(boolean passed) {
-        this.passed = passed;
-    }
-
-    public SummaryRow(String gateName, boolean passed, String total) {
-        this.gateName = gateName;
-        this.passed = passed;
-        this.total = total;
     }
 }

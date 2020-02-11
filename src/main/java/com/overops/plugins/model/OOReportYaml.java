@@ -16,6 +16,10 @@ public class OOReportYaml extends YamlObject {
     }
 
     public void addList(List<OOReportEvent> list) {
+        if (list == null) {
+            return;
+        }
+
         list.forEach(ooReportEvent -> {
             LinkedHashMap<String, String> map = new LinkedHashMap<>();
             map.put("summary", ooReportEvent.getEventSummary());
