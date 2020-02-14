@@ -1,9 +1,9 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
-import com.overops.plugins.model.QueryOverOps;
+import com.overops.plugins.model.QualityReport;
+import com.overops.plugins.model.QueryOverConfig;
 import com.overops.plugins.service.OverOpsService;
-import com.overops.plugins.utils.StringUtils;
 import com.takipi.api.client.ApiClient;
 import com.takipi.api.client.RemoteApiClient;
 import com.takipi.api.client.data.view.SummarizedView;
@@ -13,6 +13,7 @@ import com.takipi.api.client.util.regression.RegressionInput;
 import com.takipi.api.client.util.regression.RegressionUtil;
 import com.takipi.api.client.util.view.ViewUtil;
 import com.takipi.common.util.CollectionUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.fusesource.jansi.Ansi;
 import org.joda.time.DateTime;
 
@@ -22,7 +23,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class OverOpsServiceImpl implements OverOpsService {
-    private static final String SEPERATOR = ",";
+    private static final String SEPARATOR = ",";
     private boolean runRegressions = false;
     private Context context;
 
@@ -31,14 +32,14 @@ public class OverOpsServiceImpl implements OverOpsService {
     }
 
     @Override
-    public ReportBuilder.QualityReport perform(QueryOverOps queryOverOps) throws IOException, InterruptedException {
+    public QualityReport perform(QueryOverConfig queryOverConfig) throws IOException, InterruptedException {
         PrintStream printStream;
-        
-        if (convertToMinutes(queryOverOps.getBaselineTimespan()) > 0) {
+
+        if (convertToMinutes(queryOverConfig.getBaselineTimespan()) > 0) {
             runRegressions = true;
         }
 
-        if (queryOverOps.isDebug()) {
+        if (queryOverConfig.isDebug()) {
             printStream = System.err;
         } else {
             printStream = null;
@@ -48,35 +49,35 @@ public class OverOpsServiceImpl implements OverOpsService {
             context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
         }
 
-        validateInputs(queryOverOps, printStream);
+        validateInputs(queryOverConfig, printStream);
 
-        RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder().setHostname(queryOverOps.getOverOpsURL()).setApiKey(queryOverOps.getOverOpsAPIKey()).build();
+        RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder().setHostname(queryOverConfig.getOverOpsURL()).setApiKey(queryOverConfig.getOverOpsAPIKey()).build();
 
-        if (Objects.nonNull(printStream) && (queryOverOps.isDebug())) {
-            apiClient.addObserver(new ApiClientObserver(printStream, queryOverOps.isDebug()));
+        if (Objects.nonNull(printStream) && (queryOverConfig.isDebug())) {
+            apiClient.addObserver(new ApiClientObserver(printStream, queryOverConfig.isDebug()));
         }
 
-        SummarizedView allEventsView = ViewUtil.getServiceViewByName(apiClient, queryOverOps.getOverOpsSID().toUpperCase(), "All Events");
+        SummarizedView allEventsView = ViewUtil.getServiceViewByName(apiClient, queryOverConfig.getOverOpsSID().toUpperCase(), "All Events");
 
         if (Objects.isNull(allEventsView)) {
             if (Objects.nonNull(printStream)) {
-                context.getOutputStream().error("Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
+                context.getOutputStream().error("Could not acquire ID for 'All Events'. Please check connection to " + queryOverConfig.getOverOpsURL());
             }
             throw new IllegalStateException(
-                    "Could not acquire ID for 'All Events'. Please check connection to " + queryOverOps.getOverOpsURL());
+                    "Could not acquire ID for 'All Events'. Please check connection to " + queryOverConfig.getOverOpsURL());
         }
 
-        RegressionInput input = setupRegressionData(queryOverOps, allEventsView, printStream);
+        RegressionInput input = setupRegressionData(queryOverConfig, allEventsView, printStream);
 
-        return ReportBuilder.execute(apiClient, input, queryOverOps.getMaxErrorVolume(), queryOverOps.getMaxUniqueErrors(),
-                queryOverOps.getPrintTopIssues(), queryOverOps.getRegexFilter(), queryOverOps.isNewEvents(), queryOverOps.isResurfacedErrors(),
-                runRegressions, queryOverOps.isMarkUnstable(), printStream, queryOverOps.isDebug());
+        return ReportBuilder.execute(apiClient, input, queryOverConfig.getMaxErrorVolume(), queryOverConfig.getMaxUniqueErrors(),
+                queryOverConfig.getPrintTopIssues(), queryOverConfig.getRegexFilter(), queryOverConfig.isNewEvents(), queryOverConfig.isResurfacedErrors(),
+                runRegressions, queryOverConfig.isMarkUnstable(), printStream, queryOverConfig.isDebug());
 
     }
 
-    private void validateInputs (QueryOverOps queryOverOps, PrintStream printStream) {
-        String apiHost = queryOverOps.getOverOpsURL();
-        String apiKey = queryOverOps.getOverOpsAPIKey();
+    private void validateInputs (QueryOverConfig queryOverConfig, PrintStream printStream) {
+        String apiHost = queryOverConfig.getOverOpsURL();
+        String apiKey = queryOverConfig.getOverOpsAPIKey();
 
         if (StringUtils.isEmpty(apiHost)) {
             throw new IllegalArgumentException("Missing host name");
@@ -87,50 +88,49 @@ public class OverOpsServiceImpl implements OverOpsService {
         }
 
         //validate active and baseline time window
-        if (!"0".equalsIgnoreCase(queryOverOps.getActiveTimespan())) {
-            if (convertToMinutes(queryOverOps.getActiveTimespan()) == 0) {
-                context.getOutputStream().error("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
-                throw new IllegalArgumentException("For Increasing Error Gate, the active timewindow currently set to: " + queryOverOps.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
+        if (!"0".equalsIgnoreCase(queryOverConfig.getActiveTimespan())) {
+            if (convertToMinutes(queryOverConfig.getActiveTimespan()) == 0) {
+                context.getOutputStream().error("For Increasing Error Gate, the active timewindow currently set to: " + queryOverConfig.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
+                throw new IllegalArgumentException("For Increasing Error Gate, the active timewindow currently set to: " + queryOverConfig.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
             }
         }
 
-        if (!"0".equalsIgnoreCase(queryOverOps.getBaselineTimespan())) {
-            if (convertToMinutes(queryOverOps.getBaselineTimespan()) == 0) {
-                context.getOutputStream().error("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverOps.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
-                throw new IllegalArgumentException("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverOps.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
+        if (!"0".equalsIgnoreCase(queryOverConfig.getBaselineTimespan())) {
+            if (convertToMinutes(queryOverConfig.getBaselineTimespan()) == 0) {
+                context.getOutputStream().error("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverConfig.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
+                throw new IllegalArgumentException("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverConfig.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
             }
         }
 
 
-        if (StringUtils.isEmpty(queryOverOps.getOverOpsSID())) {
+        if (StringUtils.isEmpty(queryOverConfig.getOverOpsSID())) {
             throw new IllegalArgumentException("Missing environment Id");
         }
     }
 
-    private RegressionInput setupRegressionData(QueryOverOps queryOverOps, SummarizedView allEventsView, PrintStream printStream)
-            throws InterruptedException, IOException {
+    private RegressionInput setupRegressionData(QueryOverConfig config, SummarizedView allEventsView, PrintStream printStream) {
 
         RegressionInput input = new RegressionInput();
-        input.serviceId = queryOverOps.getOverOpsSID();
+        input.serviceId = config.getOverOpsSID();
         input.viewId = allEventsView.id;
-        input.applictations = parseArrayString(queryOverOps.getApplicationName(), printStream, "Application Name");
-        input.deployments = parseArrayString(queryOverOps.getDeploymentName(), printStream, "Deployment Name");
-        input.criticalExceptionTypes = parseArrayString(queryOverOps.getCriticalExceptionTypes(), printStream,
+        input.applictations = parseArrayString(config.getApplicationName(), printStream, "Application Name");
+        input.deployments = parseArrayString(config.getDeploymentName(), printStream, "Deployment Name");
+        input.criticalExceptionTypes = parseArrayString(config.getCriticalExceptionTypes(), printStream,
                 "Critical Exception Types");
 
         if (runRegressions) {
-            input.activeTimespan = convertToMinutes(queryOverOps.getActiveTimespan());
-            input.baselineTime = queryOverOps.getBaselineTimespan();
-            input.baselineTimespan = convertToMinutes(queryOverOps.getBaselineTimespan());
-            input.minVolumeThreshold = queryOverOps.getMinVolumeThreshold();
-            input.minErrorRateThreshold = queryOverOps.getMinErrorRateThreshold();
-            input.regressionDelta = queryOverOps.getRegressionDelta();
-            input.criticalRegressionDelta = queryOverOps.getCriticalRegressionDelta();
-            input.applySeasonality = queryOverOps.isApplySeasonality();
+            input.activeTimespan = convertToMinutes(config.getActiveTimespan());
+            input.baselineTime = config.getBaselineTimespan();
+            input.baselineTimespan = convertToMinutes(config.getBaselineTimespan());
+            input.minVolumeThreshold = config.getMinVolumeThreshold();
+            input.minErrorRateThreshold = config.getMinErrorRateThreshold();
+            input.regressionDelta = config.getRegressionDelta();
+            input.criticalRegressionDelta = config.getCriticalRegressionDelta();
+            input.applySeasonality = config.isApplySeasonality();
             input.validate();
         }
 
-        printInputs(queryOverOps, printStream, input);
+        printInputs(config, printStream, input);
 
         return input;
     }
@@ -159,23 +159,23 @@ public class OverOpsServiceImpl implements OverOpsService {
             return Collections.emptySet();
         }
 
-        return Arrays.asList(value.trim().split(Pattern.quote(SEPERATOR)));
+        return Arrays.asList(value.trim().split(Pattern.quote(SEPARATOR)));
     }
 
-    private void printInputs(QueryOverOps queryOverOps, PrintStream printStream, RegressionInput input) {
+    private void printInputs(QueryOverConfig queryOverConfig, PrintStream printStream, RegressionInput input) {
 
         if (Objects.nonNull(printStream)) {
             printStream.println(input);
 
-            printStream.println("Max unique errors  = " + queryOverOps.getMaxUniqueErrors());
-            printStream.println("Max error volume  = " + queryOverOps.getMaxErrorVolume());
-            printStream.println("Check new errors  = " + queryOverOps.isNewEvents());
-            printStream.println("Check resurfaced errors  = " + queryOverOps.isResurfacedErrors());
+            printStream.println("Max unique errors  = " + queryOverConfig.getMaxUniqueErrors());
+            printStream.println("Max error volume  = " + queryOverConfig.getMaxErrorVolume());
+            printStream.println("Check new errors  = " + queryOverConfig.isNewEvents());
+            printStream.println("Check resurfaced errors  = " + queryOverConfig.isResurfacedErrors());
 
             String regexPrint;
 
-            if (Objects.nonNull(queryOverOps.getRegexFilter())) {
-                regexPrint = queryOverOps.getRegexFilter();
+            if (Objects.nonNull(queryOverConfig.getRegexFilter())) {
+                regexPrint = queryOverConfig.getRegexFilter();
             } else {
                 regexPrint = "";
             }

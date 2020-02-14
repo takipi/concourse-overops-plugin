@@ -12,14 +12,14 @@ import java.util.stream.Stream;
 
 public class RenderService extends Render {
 
-    private ReportBuilder.QualityReport qualityReport;
+    private QualityReport qualityReport;
     private OutputWriter outputStream;
     private QualityGate criticalQualityGate;
     private QualityGate newQualityGate;
     private QualityGate resurfacedQualityGate;
     private QualityGate increasingQualityGate;
 
-    public RenderService(Context context, ReportBuilder.QualityReport report) {
+    public RenderService(Context context, QualityReport report) {
         super(context);
         outputStream = this.context.getOutputStream();
         this.qualityReport = report;

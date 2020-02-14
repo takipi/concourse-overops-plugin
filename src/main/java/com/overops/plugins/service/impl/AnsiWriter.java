@@ -63,29 +63,6 @@ public class AnsiWriter implements OutputWriter {
     }
 
     @Override
-    public void table(List<String> headers, List<OOReportEvent> body) {
-        AsciiTable at = new AsciiTable();
-        at.addRule();
-        at.addRow(headers);
-        at.addRule();
-        at.getRenderer().setCWC(new CWC_FixedWidth().add(85).add(15).add(15).add(10));
-        printStream.println(at.render(125));
-        body.forEach(item -> {
-            AsciiTable tbody = new AsciiTable();
-            tbody.addRow(item.getEventSummary(), item.getApplications(), item.getIntroducedBy(), item.getHits());
-            tbody.addRule();
-            tbody.getRenderer().setCWC(new CWC_FixedWidth().add(85).add(15).add(15).add(10));
-            printStream.println(tbody.render(125));
-            AsciiTable tbodyLink = new AsciiTable();
-            tbodyLink.addRow(item.getARCLink());
-            tbodyLink.addRule();
-            printStream.println(tbodyLink.render(130));
-        });
-        printStream.println("\n");
-
-    }
-
-    @Override
     public void printYamlObject(YamlObject yamlObject) {
         printYamlObject(yamlObject, null);
     }
