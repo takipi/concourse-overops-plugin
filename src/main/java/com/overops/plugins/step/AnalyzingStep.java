@@ -16,8 +16,7 @@ public class AnalyzingStep extends Step<QueryOverConfig, QualityReport> {
 
     public AnalyzingStep(Context context) {
         super(context);
-        this.overOpsService = DependencyInjector.getImplementation(context);
-
+        this.overOpsService = DependencyInjector.getImplementation(OverOpsService.class);
     }
 
     @Override

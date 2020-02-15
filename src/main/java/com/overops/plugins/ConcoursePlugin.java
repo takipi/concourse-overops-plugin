@@ -13,7 +13,7 @@ public class ConcoursePlugin {
 
     public static void run(String[] args) {
         boolean status = true;
-        Context context = new Context();
+        Context context = DependencyInjector.getImplementation(Context.class);
         try {
             QueryOverConfig config = new PreparationStep(context).run(args);
             QualityReport report = new AnalyzingStep(context).run(config);

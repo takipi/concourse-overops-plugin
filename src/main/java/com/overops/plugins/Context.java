@@ -6,7 +6,7 @@ public class Context {
     private OutputWriter outputStream;
 
     public Context() {
-        this.outputStream = DependencyInjector.getImplementation();
+        this.outputStream = DependencyInjector.getImplementation(OutputWriter.class);
     }
 
     public OutputWriter getOutputStream() {

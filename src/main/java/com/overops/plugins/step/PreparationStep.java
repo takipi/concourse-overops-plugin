@@ -35,14 +35,14 @@ public class PreparationStep extends Step<String[], QueryOverConfig> {
                 }).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     }
 
-    private void validation(QueryOverConfig query) {
-        if (StringUtils.isEmpty(query.getOverOpsURL())) {
+    private void validation(QueryOverConfig config) {
+        if (StringUtils.isEmpty(config.getOverOpsURL())) {
             throw new IllegalArgumentException("OverOps url can not be empty.");
         }
-        if (StringUtils.isEmpty(query.getOverOpsSID())) {
+        if (StringUtils.isEmpty(config.getOverOpsSID())) {
             throw new IllegalArgumentException("Environment id can not be empty.");
         }
-        if (StringUtils.isEmpty(query.getOverOpsAPIKey())) {
+        if (StringUtils.isEmpty(config.getOverOpsAPIKey())) {
             throw new IllegalArgumentException("Token can not be empty.");
         }
     }
