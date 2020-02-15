@@ -205,29 +205,30 @@ public class QueryOverConfig {
     }
 
     public static QueryOverConfig mapToObject(Map<String, String> params) {
-        QueryOverConfig queryOverConfig = new QueryOverConfig();
-        queryOverConfig.overOpsSID = params.get("overOpsSID");
-        queryOverConfig.overOpsAPIKey = params.get("overOpsAPIKey");
-        queryOverConfig.applicationName = params.get("applicationName");
-        queryOverConfig.deploymentName = params.get("deploymentName");
-        queryOverConfig.serviceId = params.getOrDefault("serviceId", queryOverConfig.overOpsSID);
-        queryOverConfig.regexFilter = params.getOrDefault("regexFilter", "");
-        queryOverConfig.markUnstable = Boolean.parseBoolean(params.getOrDefault("markUnstable", "false"));
-        queryOverConfig.printTopIssues = Integer.parseInt(params.getOrDefault("printTopIssues", "5"));
-        queryOverConfig.newEvents = Boolean.parseBoolean(params.getOrDefault("newEvents", "false"));
-        queryOverConfig.resurfacedErrors = Boolean.parseBoolean(params.getOrDefault("resurfacedErrors", "false"));
-        queryOverConfig.maxErrorVolume = Integer.parseInt(params.getOrDefault("maxErrorVolume", "0"));
-        queryOverConfig.maxUniqueErrors = Integer.parseInt(params.getOrDefault("maxUniqueErrors", "0"));
-        queryOverConfig.criticalExceptionTypes = params.getOrDefault("criticalExceptionTypes", "");
-        queryOverConfig.activeTimespan = params.getOrDefault("activeTimespan", "0");
-        queryOverConfig.baselineTimespan = params.getOrDefault("baselineTimespan", "0");
-        queryOverConfig.minVolumeThreshold = Integer.parseInt(params.getOrDefault("minVolumeThreshold", "0"));
-        queryOverConfig.minErrorRateThreshold = Double.parseDouble(params.getOrDefault("minErrorRateThreshold", "0"));
-        queryOverConfig.regressionDelta = Double.parseDouble(params.getOrDefault("regressionDelta", "0"));
-        queryOverConfig.criticalRegressionDelta = Double.parseDouble(params.getOrDefault("criticalRegressionDelta", "0"));
-        queryOverConfig.applySeasonality = Boolean.parseBoolean(params.getOrDefault("applySeasonality", "false"));
-        queryOverConfig.debug = Boolean.parseBoolean(params.getOrDefault("debug", "false"));
-        return queryOverConfig;
+        QueryOverConfig config = new QueryOverConfig();
+        config.overOpsURL = params.get("overOpsURL");
+        config.overOpsSID = params.get("overOpsSID");
+        config.overOpsAPIKey = params.get("overOpsAPIKey");
+        config.applicationName = params.get("applicationName");
+        config.deploymentName = params.get("deploymentName");
+        config.serviceId = params.getOrDefault("serviceId", config.overOpsSID);
+        config.regexFilter = params.getOrDefault("regexFilter", "");
+        config.markUnstable = Boolean.parseBoolean(params.getOrDefault("markUnstable", "false"));
+        config.printTopIssues = Integer.parseInt(params.getOrDefault("printTopIssues", "5"));
+        config.newEvents = Boolean.parseBoolean(params.getOrDefault("newEvents", "false"));
+        config.resurfacedErrors = Boolean.parseBoolean(params.getOrDefault("resurfacedErrors", "false"));
+        config.maxErrorVolume = Integer.parseInt(params.getOrDefault("maxErrorVolume", "0"));
+        config.maxUniqueErrors = Integer.parseInt(params.getOrDefault("maxUniqueErrors", "0"));
+        config.criticalExceptionTypes = params.getOrDefault("criticalExceptionTypes", "");
+        config.activeTimespan = params.getOrDefault("activeTimespan", "0");
+        config.baselineTimespan = params.getOrDefault("baselineTimespan", "0");
+        config.minVolumeThreshold = Integer.parseInt(params.getOrDefault("minVolumeThreshold", "0"));
+        config.minErrorRateThreshold = Double.parseDouble(params.getOrDefault("minErrorRateThreshold", "0"));
+        config.regressionDelta = Double.parseDouble(params.getOrDefault("regressionDelta", "0"));
+        config.criticalRegressionDelta = Double.parseDouble(params.getOrDefault("criticalRegressionDelta", "0"));
+        config.applySeasonality = Boolean.parseBoolean(params.getOrDefault("applySeasonality", "false"));
+        config.debug = Boolean.parseBoolean(params.getOrDefault("debug", "false"));
+        return config;
     }
 
     @Override
