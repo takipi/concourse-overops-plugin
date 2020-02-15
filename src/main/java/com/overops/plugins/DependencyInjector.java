@@ -10,13 +10,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class DependencyInjector {
-//    public static OutputWriter getImplementation() {
-//        return new AnsiWriter(System.err);
-//    }
-//
-//    public static OverOpsService getImplementation(Context context) {
-//        return new OverOpsServiceImpl(context);
-//    }
 
     private static Map<Class, Supplier<?>> map = new HashMap<>();
     private static Map<Class, Object> beansMap = new HashMap<>();
