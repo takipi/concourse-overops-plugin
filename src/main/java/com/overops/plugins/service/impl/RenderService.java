@@ -114,15 +114,15 @@ public class RenderService extends Render {
 
         if (toMarkUnstable) {
             if (isActuallyUnstable) {
-                outputStream.error(unstableBuildWithToMarkUnstableSetSummary);
+                outputStream.printlnError(unstableBuildWithToMarkUnstableSetSummary);
             } else {
-                outputStream.success(passedSummary);
+                outputStream.printlnSuccess(passedSummary);
             }
         } else {
             if (isActuallyUnstable) {
                 outputStream.yellowFgPrintln(unstableBuildWithToMarkUnstableNotSetSummary);
             } else {
-                outputStream.success(passedSummary);
+                outputStream.printlnSuccess(passedSummary);
             }
         }
 

@@ -1,11 +1,11 @@
 package com.overops.plugins.model;
 
-import com.takipi.api.client.result.event.EventResult;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import com.takipi.api.client.util.regression.RateRegression;
 import com.takipi.api.client.util.regression.RegressionInput;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class QualityReport {
 
@@ -143,24 +143,5 @@ public class QualityReport {
 
     public boolean isMarkedUnstable() {
         return markedUnstable;
-    }
-
-    public List<Metadata> getMetadata() {
-        List<Metadata> metadata = null;
-        if (Objects.nonNull(getNewIssues()) && getNewIssues().size() > 0) {
-            metadata = getNewIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
-                    .max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createMeta).orElse(new ArrayList<>());
-        }
-
-        if (Objects.isNull(metadata) && (Objects.nonNull(getAllIssues()) && getAllIssues().size() > 0)) {
-            metadata = getAllIssues().stream().map(OOReportEvent::getEvent).filter(Objects::nonNull).filter(e -> Objects.nonNull(e.id))
-                    .max(Comparator.comparingLong(e -> Long.parseLong(e.id))).map(this::createMeta).orElse(new ArrayList<>());
-        }
-
-        return Optional.ofNullable(metadata).orElse(new ArrayList<>());
-    }
-
-    private List<Metadata> createMeta(EventResult e) {
-        return Arrays.asList(new Metadata("type", e.type), new Metadata("summary", e.summary),new Metadata("name", e.name));
     }
 }

@@ -1,6 +1,5 @@
 package com.overops.plugins.step;
 
-import com.overops.plugins.Context;
 import com.overops.plugins.DependencyInjector;
 import com.overops.plugins.core.Step;
 import com.overops.plugins.model.QualityReport;
@@ -14,8 +13,7 @@ public class AnalyzingStep extends Step<QueryOverConfig, QualityReport> {
 
     private OverOpsService overOpsService;
 
-    public AnalyzingStep(Context context) {
-        super(context);
+    public AnalyzingStep() {
         this.overOpsService = DependencyInjector.getImplementation(OverOpsService.class);
     }
 

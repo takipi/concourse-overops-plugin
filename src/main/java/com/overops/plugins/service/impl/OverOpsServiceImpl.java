@@ -1,6 +1,7 @@
 package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
+import com.overops.plugins.DependencyInjector;
 import com.overops.plugins.model.QualityReport;
 import com.overops.plugins.model.QueryOverConfig;
 import com.overops.plugins.service.OverOpsService;
@@ -27,8 +28,8 @@ public class OverOpsServiceImpl implements OverOpsService {
     private boolean runRegressions = false;
     private Context context;
 
-    public OverOpsServiceImpl(Context context) {
-        this.context = context;
+    public OverOpsServiceImpl() {
+        this.context = DependencyInjector.getImplementation(Context.class);
     }
 
     @Override
@@ -61,7 +62,7 @@ public class OverOpsServiceImpl implements OverOpsService {
 
         if (Objects.isNull(allEventsView)) {
             if (Objects.nonNull(printStream)) {
-                context.getOutputStream().error("Could not acquire ID for 'All Events'. Please check connection to " + queryOverConfig.getOverOpsURL());
+                context.getOutputStream().printlnError("Could not acquire ID for 'All Events'. Please check connection to " + queryOverConfig.getOverOpsURL());
             }
             throw new IllegalStateException(
                     "Could not acquire ID for 'All Events'. Please check connection to " + queryOverConfig.getOverOpsURL());
@@ -90,14 +91,14 @@ public class OverOpsServiceImpl implements OverOpsService {
         //validate active and baseline time window
         if (!"0".equalsIgnoreCase(queryOverConfig.getActiveTimespan())) {
             if (convertToMinutes(queryOverConfig.getActiveTimespan()) == 0) {
-                context.getOutputStream().error("For Increasing Error Gate, the active timewindow currently set to: " + queryOverConfig.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
+                context.getOutputStream().printlnError("For Increasing Error Gate, the active timewindow currently set to: " + queryOverConfig.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
                 throw new IllegalArgumentException("For Increasing Error Gate, the active timewindow currently set to: " + queryOverConfig.getActiveTimespan() +  " is not properly formated. See help for format instructions.");
             }
         }
 
         if (!"0".equalsIgnoreCase(queryOverConfig.getBaselineTimespan())) {
             if (convertToMinutes(queryOverConfig.getBaselineTimespan()) == 0) {
-                context.getOutputStream().error("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverConfig.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
+                context.getOutputStream().printlnError("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverConfig.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
                 throw new IllegalArgumentException("For Increasing Error Gate, the baseline timewindow currently set to: " + queryOverConfig.getBaselineTimespan() + " cannot be zero or is improperly formated. See help for format instructions.");
             }
         }

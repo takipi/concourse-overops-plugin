@@ -1,6 +1,5 @@
 package com.overops.plugins;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.overops.plugins.model.QualityReport;
 import com.overops.plugins.model.QueryOverConfig;
 import com.overops.plugins.step.AnalyzingStep;
@@ -13,18 +12,20 @@ public class ConcoursePlugin {
 
     public static void run(String[] args) {
         boolean status = true;
-        Context context = DependencyInjector.getImplementation(Context.class);
         try {
-            QueryOverConfig config = new PreparationStep(context).run(args);
-            QualityReport report = new AnalyzingStep(context).run(config);
-            status = new GenerateReportStep(context).run(report);
-
-            System.out.println(new ObjectMapper().writeValueAsString(report.getMetadata()));
+            QueryOverConfig config = new PreparationStep().run(args);
+            QualityReport report = new AnalyzingStep().run(config);
+            status = new GenerateReportStep().run(report);
         } catch (Exception e) {
             status = false;
-            context.getOutputStream().error("Exceptions: " + e.toString());
-            context.getOutputStream().error("Trace: " + Arrays.toString(e.getStackTrace()));
+            printError(e);
         }
         System.exit(status ? 0 : 1);
+    }
+
+    private static void printError(Exception e) {
+        Context context = DependencyInjector.getImplementation(Context.class);
+        context.getOutputStream().printlnError("Exceptions: " + e.toString());
+        context.getOutputStream().printlnError("Trace: " + Arrays.toString(e.getStackTrace()));
     }
 }

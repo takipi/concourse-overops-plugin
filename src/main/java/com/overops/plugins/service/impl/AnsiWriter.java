@@ -31,12 +31,12 @@ public class AnsiWriter implements OutputWriter {
     }
 
     @Override
-    public void error(String message) {
+    public void printlnError(String message) {
         printStream.println(ansi().fgBrightRed().a(message).reset().toString());
     }
 
     @Override
-    public void success(String message) {
+    public void printlnSuccess(String message) {
         printStream.println(ansi().fgBrightGreen().a(message).reset().toString());
     }
 

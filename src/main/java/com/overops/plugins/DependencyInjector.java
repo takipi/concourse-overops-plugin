@@ -16,7 +16,7 @@ public class DependencyInjector {
 
     static {
         map.put(OutputWriter.class, () -> new AnsiWriter(System.err));
-        map.put(OverOpsService.class, () -> new OverOpsServiceImpl(getImplementation(Context.class)));
+        map.put(OverOpsService.class, () -> new OverOpsServiceImpl());
         map.put(Context.class, Context::new);
     }
 

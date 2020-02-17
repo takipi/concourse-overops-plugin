@@ -7,9 +7,9 @@ import java.util.function.BiFunction;
 
 public interface OutputWriter {
 
-    void error(String message);
+    void printlnError(String message);
 
-    void success(String message);
+    void printlnSuccess(String message);
 
     void yellowFgPrintln(String message);
 
