@@ -41,6 +41,11 @@ public class AnsiWriter implements OutputWriter {
     }
 
     @Override
+    public void printlnDebug(String message) {
+        printStream.println(ansi().fgBrightDefault().a(message).reset().toString());
+    }
+
+    @Override
     public void yellowFgPrintln(String message) {
         printStream.println(ansi().fgBrightYellow().a(message).reset().toString());
     }

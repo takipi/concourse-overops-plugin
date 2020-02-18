@@ -1,12 +1,18 @@
 package com.overops.plugins.model;
 
 import com.takipi.common.util.Pair;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class QueryOverConfig {
+public class Config {
+    private static final String SEPARATOR = ",";
+
     private String overOpsURL;
     private String overOpsSID;
     private String overOpsAPIKey;
@@ -32,7 +38,7 @@ public class QueryOverConfig {
 
     private boolean debug = false;
 
-    public QueryOverConfig(String[] args) {
+    public Config(String[] args) {
         Map<String, String> map = argsToMap(args);
 
         overOpsURL = map.get("overOpsURL");
@@ -85,8 +91,16 @@ public class QueryOverConfig {
         return applicationName;
     }
 
+    public Collection<String> getApplicationCollection() {
+        return parseArrayString(applicationName);
+    }
+
     public String getDeploymentName() {
         return deploymentName;
+    }
+
+    public Collection<String> getDeploymentCollection() {
+        return parseArrayString(deploymentName);
     }
 
     public String getServiceId() {
@@ -125,12 +139,24 @@ public class QueryOverConfig {
         return criticalExceptionTypes;
     }
 
+    public Collection<String> getCriticalExceptionTypesCollection() {
+        return parseArrayString(criticalExceptionTypes);
+    }
+
     public String getActiveTimespan() {
         return activeTimespan;
     }
 
+    public int getActiveTimespanMinutes() {
+        return convertToMinutes(activeTimespan);
+    }
+
     public String getBaselineTimespan() {
         return baselineTimespan;
+    }
+
+    public int getBaselineTimespanMinutes() {
+        return convertToMinutes(baselineTimespan);
     }
 
     public Integer getMinVolumeThreshold() {
@@ -155,6 +181,33 @@ public class QueryOverConfig {
 
     public boolean isDebug() {
         return debug;
+    }
+
+    private int convertToMinutes(String timeWindow) {
+
+        if (StringUtils.isEmpty(timeWindow)) {
+            return 0;
+        }
+
+        if (timeWindow.toLowerCase().contains("d")) {
+            int days = Integer.parseInt(timeWindow.substring(0, timeWindow.indexOf("d")));
+            return days * 24 * 60;
+        } else if (timeWindow.toLowerCase().contains("h")) {
+            int hours = Integer.parseInt(timeWindow.substring(0, timeWindow.indexOf("h")));
+            return hours * 60;
+        } else if (timeWindow.toLowerCase().contains("m")) {
+            return Integer.parseInt(timeWindow.substring(0, timeWindow.indexOf("m")));
+        }
+
+        return 0;
+    }
+
+    private static Collection<String> parseArrayString(String value) {
+        if (StringUtils.isEmpty(value)) {
+            return Collections.emptySet();
+        }
+
+        return Arrays.asList(value.trim().split(Pattern.quote(SEPARATOR)));
     }
 
     @Override

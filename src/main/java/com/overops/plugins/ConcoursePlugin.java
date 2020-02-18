@@ -1,7 +1,7 @@
 package com.overops.plugins;
 
 import com.overops.plugins.model.QualityReport;
-import com.overops.plugins.model.QueryOverConfig;
+import com.overops.plugins.model.Config;
 import com.overops.plugins.step.AnalyzingStep;
 import com.overops.plugins.step.GenerateReportStep;
 import com.overops.plugins.step.PreparationStep;
@@ -13,7 +13,7 @@ public class ConcoursePlugin {
     public static void run(String[] args) {
         boolean status = true;
         try {
-            QueryOverConfig config = new PreparationStep().run(args);
+            Config config = new PreparationStep().run(args);
             QualityReport report = new AnalyzingStep().run(config);
             status = new GenerateReportStep().run(report);
         } catch (Exception e) {

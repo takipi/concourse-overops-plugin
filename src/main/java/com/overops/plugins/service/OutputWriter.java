@@ -11,6 +11,8 @@ public interface OutputWriter {
 
     void printlnSuccess(String message);
 
+    void printlnDebug(String message);
+
     void yellowFgPrintln(String message);
 
     void print(String s, Ansi.Color color);
