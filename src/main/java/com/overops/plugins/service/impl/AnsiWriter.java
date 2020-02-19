@@ -1,17 +1,13 @@
 package com.overops.plugins.service.impl;
 
-import com.overops.plugins.model.YamlObject;
+import com.overops.plugins.model.yaml.YamlObject;
 import com.overops.plugins.service.OutputWriter;
-import com.takipi.api.client.util.cicd.OOReportEvent;
-import de.vandermeer.asciitable.AsciiTable;
-import de.vandermeer.asciitable.CWC_FixedWidth;
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
@@ -28,6 +24,11 @@ public class AnsiWriter implements OutputWriter {
 
         propertyColor = Ansi.Color.BLUE;
         propertyValueColor = Ansi.Color.CYAN;
+    }
+
+    @Override
+    public PrintStream getPrintStream() {
+        return printStream;
     }
 
     @Override

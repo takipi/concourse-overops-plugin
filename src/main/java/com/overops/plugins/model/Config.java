@@ -159,6 +159,10 @@ public class Config {
         return convertToMinutes(baselineTimespan);
     }
 
+    public boolean isRegressionPresent() {
+        return getBaselineTimespanMinutes() > 0;
+    }
+
     public Integer getMinVolumeThreshold() {
         return minVolumeThreshold;
     }

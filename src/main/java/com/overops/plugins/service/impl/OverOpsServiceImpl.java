@@ -10,14 +10,11 @@ import com.takipi.api.client.RemoteApiClient;
 import com.takipi.api.client.data.view.SummarizedView;
 import com.takipi.api.client.util.regression.RegressionInput;
 import com.takipi.api.client.util.view.ViewUtil;
-import org.fusesource.jansi.Ansi;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Objects;
 
 public class OverOpsServiceImpl implements OverOpsService {
-    private boolean runRegressions = false;
     private Context context;
     private Config config;
 
@@ -28,32 +25,27 @@ public class OverOpsServiceImpl implements OverOpsService {
     @Override
     public QualityReport perform(Config config) throws IOException, InterruptedException {
         this.config = config;
-        runRegressions = config.getBaselineTimespanMinutes() > 0;
 
-        PrintStream printStream;
-        if (config.isDebug()) {
-            printStream = System.err;
-        } else {
-            printStream = null;
-        }
+        RemoteApiClient apiClient = createRemoteApiClient();
+        SummarizedView allEventsView = retrieveAllEventsView(apiClient);
+        RegressionInput input = setupRegressionData(allEventsView);
 
-        context.getOutputStream().println("OverOps [Step 2/3]: Starting OverOps Quality Gate...", Ansi.Color.MAGENTA);
+        return new ReportBuilder(apiClient, input, config).build();
+    }
 
+    private SummarizedView retrieveAllEventsView(RemoteApiClient apiClient) {
+        SummarizedView allEventsView = ViewUtil.getServiceViewByName(apiClient, config.getOverOpsSID().toUpperCase(), "All Events");
+        validateAllEventsView(allEventsView);
+        return allEventsView;
+    }
+
+    private RemoteApiClient createRemoteApiClient() {
         RemoteApiClient apiClient = (RemoteApiClient) RemoteApiClient.newBuilder()
                 .setHostname(config.getOverOpsURL())
                 .setApiKey(config.getOverOpsAPIKey())
                 .build();
         printApiClientLogs(apiClient);
-
-        SummarizedView allEventsView = ViewUtil.getServiceViewByName(apiClient, config.getOverOpsSID().toUpperCase(), "All Events");
-        validateAllEventsView(allEventsView);
-
-        RegressionInput input = setupRegressionData(allEventsView);
-
-        return ReportBuilder.execute(apiClient, input, config.getMaxErrorVolume(), config.getMaxUniqueErrors(),
-                config.getPrintTopIssues(), config.getRegexFilter(), config.isNewEvents(), config.isResurfacedErrors(),
-                runRegressions, config.isMarkUnstable(), printStream, config.isDebug());
-
+        return apiClient;
     }
 
     private void printApiClientLogs(RemoteApiClient apiClient) {
@@ -86,7 +78,7 @@ public class OverOpsServiceImpl implements OverOpsService {
         input.deployments = config.getDeploymentCollection();
         input.criticalExceptionTypes = config.getCriticalExceptionTypesCollection();
 
-        if (runRegressions) {
+        if (config.isRegressionPresent()) {
             input.activeTimespan = config.getActiveTimespanMinutes();
             input.baselineTime = config.getBaselineTimespan();
             input.baselineTimespan = config.getBaselineTimespanMinutes();

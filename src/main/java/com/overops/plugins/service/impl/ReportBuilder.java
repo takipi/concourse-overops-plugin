@@ -1,6 +1,9 @@
 package com.overops.plugins.service.impl;
 
 import com.google.gson.Gson;
+import com.overops.plugins.Context;
+import com.overops.plugins.DependencyInjector;
+import com.overops.plugins.model.Config;
 import com.overops.plugins.model.OOReportRegressedEvent;
 import com.overops.plugins.model.QualityReport;
 import com.takipi.api.client.ApiClient;
@@ -15,13 +18,22 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class ReportBuilder {
+	private ApiClient apiClient;
+	private RegressionInput input;
+	private Config config;
+
+	public ReportBuilder(ApiClient apiClient, RegressionInput input, Config config) {
+		this.apiClient = apiClient;
+		this.input = input;
+		this.config = config;
+	}
 
 	private static class ReportVolume {
 		protected List<OOReportEvent> topEvents;
 		protected Collection<EventResult> filter;
 	}
 
-	private static boolean allowEvent(EventResult event, Pattern pattern) {
+	private boolean allowEvent(EventResult event, Pattern pattern) {
 
 		if (pattern == null ) {
 			return true;
@@ -33,7 +45,7 @@ public class ReportBuilder {
 		return result;
 	}
 
-	private static List<EventResult> getSortedEventsByVolume(Collection<EventResult> events) {
+	private List<EventResult> getSortedEventsByVolume(Collection<EventResult> events) {
 
 		List<EventResult> result = new ArrayList<EventResult>(events);
 
@@ -59,7 +71,7 @@ public class ReportBuilder {
 		return result;
 	}
 
-	private static void addEvent(Set<EventResult> events, EventResult event,
+	private void addEvent(Set<EventResult> events, EventResult event,
 		Pattern pattern, PrintStream output, boolean verbose) {
 
 		if (allowEvent(event, pattern)) {
@@ -69,7 +81,7 @@ public class ReportBuilder {
 		}
 	}
 
-	private static Collection<EventResult> filterEvents(RateRegression rateRegression,
+	private Collection<EventResult> filterEvents(RateRegression rateRegression,
 			Pattern pattern, PrintStream output, boolean verbose) {
 
 		Set<EventResult> result = new HashSet<>();
@@ -101,7 +113,7 @@ public class ReportBuilder {
 		return result;
 	}
 
-	private static ReportVolume getReportVolume(ApiClient apiClient,
+	private ReportVolume getReportVolume(ApiClient apiClient,
 			RegressionInput input, RateRegression rateRegression,
 			int limit, String regexFilter,  PrintStream output, boolean verbose) {
 
@@ -136,12 +148,19 @@ public class ReportBuilder {
 		return result;
 	}
 
-	/*
-	 * Entry point into report engine
-	 */
-	public static QualityReport execute(ApiClient apiClient, RegressionInput input,
-										Integer maxEventVolume, Integer maxUniqueErrors, int topEventLimit, String regexFilter,
-										boolean newEvents, boolean resurfacedEvents, boolean runRegressions, boolean markedUnstable, PrintStream output, boolean verbose) {
+	public QualityReport build() {
+		Integer maxEventVolume = config.getMaxErrorVolume();
+		Integer maxUniqueErrors = config.getMaxUniqueErrors();
+		int topEventLimit = config.getPrintTopIssues();
+		String regexFilter =config.getRegexFilter();
+		boolean newEvents= config.isNewEvents();
+		boolean resurfacedEvents = config.isResurfacedErrors();
+		boolean runRegressions = config.isRegressionPresent();
+		boolean markedUnstable = config.isMarkUnstable();
+		Context context = DependencyInjector.getImplementation(Context.class);
+		PrintStream output = context.getOutputStream().getPrintStream();
+		boolean verbose = config.isDebug();
+
 
 		//check if total or unique gates are being tested
 		boolean countGate = false;
@@ -180,7 +199,7 @@ public class ReportBuilder {
 			reportVolume = getReportVolume(apiClient, input,
 					rateRegression, topEventLimit, regexFilter, output, verbose);
 
-			regressions = getAllRegressions(apiClient, input, rateRegression, reportVolume.filter);
+			regressions = getAllRegressions(rateRegression, reportVolume.filter);
 			if (regressions != null && regressions.size() > 0) {
 				hasRegressions = true;
 				replaceSourceId(regressions);
@@ -226,7 +245,7 @@ public class ReportBuilder {
 				checkUniqueEventGate, runRegressions, maxEventVolume, maxUniqueErrors, markedUnstable);
 	}
 
-    private static boolean processQualityGateErrors(List<OOReportEvent> events) {
+    private boolean processQualityGateErrors(List<OOReportEvent> events) {
 	    boolean errorsExist = false;
         if (events != null && events.size() > 0) {
             errorsExist = true;
@@ -240,7 +259,7 @@ public class ReportBuilder {
      * see: https://overopshq.atlassian.net/wiki/spaces/PP/pages/1529872385/Hit+Sources
      * @param events
      */
-	private static void replaceSourceId (List<? extends OOReportEvent> events) {
+	private void replaceSourceId (List<? extends OOReportEvent> events) {
         String match = "&source=(\\d)+"; // matches at least one digit
         String replace = "&source=47";    // replace with 4
 
@@ -252,8 +271,7 @@ public class ReportBuilder {
 		}
 	}
 
-	private static List<OOReportRegressedEvent> getAllRegressions(ApiClient apiClient,
-			RegressionInput input, RateRegression rateRegression, Collection<EventResult> filter) {
+	private List<OOReportRegressedEvent> getAllRegressions(RateRegression rateRegression, Collection<EventResult> filter) {
 
 		List<OOReportRegressedEvent> result = new ArrayList<OOReportRegressedEvent>();
 

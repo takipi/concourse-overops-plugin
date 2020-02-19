@@ -18,8 +18,8 @@ public class AnalyzingStep extends Step<Config, QualityReport> {
     }
 
     @Override
-    public QualityReport run(Config inputParams) throws IOException, InterruptedException {
+    public QualityReport run(Config config) throws IOException, InterruptedException {
         context.getOutputStream().println("OverOps [Step 2/3]: Analyzing data...", Ansi.Color.MAGENTA);
-        return overOpsService.perform(inputParams);
+        return overOpsService.perform(config);
     }
 }

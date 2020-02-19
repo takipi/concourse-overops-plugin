@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QualityReport {
-
     private final List<OOReportEvent> newIssues;
     private final List<OOReportRegressedEvent> regressions;
     private final List<OOReportEvent> criticalErrors;

@@ -1,5 +1,6 @@
-package com.overops.plugins.model;
+package com.overops.plugins.model.yaml;
 
+import com.overops.plugins.model.yaml.YamlObject;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 
 import java.util.LinkedHashMap;

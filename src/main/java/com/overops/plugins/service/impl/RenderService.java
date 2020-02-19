@@ -2,6 +2,9 @@ package com.overops.plugins.service.impl;
 
 import com.overops.plugins.Context;
 import com.overops.plugins.model.*;
+import com.overops.plugins.model.yaml.OOReportYaml;
+import com.overops.plugins.model.yaml.QualityGateSummaryYaml;
+import com.overops.plugins.model.yaml.YamlObject;
 import com.overops.plugins.service.Render;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import org.fusesource.jansi.Ansi;

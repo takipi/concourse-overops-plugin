@@ -1,11 +1,14 @@
 package com.overops.plugins.service;
 
-import com.overops.plugins.model.YamlObject;
+import com.overops.plugins.model.yaml.YamlObject;
 import org.fusesource.jansi.Ansi;
 
+import java.io.PrintStream;
 import java.util.function.BiFunction;
 
 public interface OutputWriter {
+
+    PrintStream getPrintStream();
 
     void printlnError(String message);
 
