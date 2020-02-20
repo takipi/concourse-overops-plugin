@@ -11,21 +11,29 @@ import com.takipi.api.client.result.event.EventResult;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import com.takipi.api.client.util.cicd.ProcessQualityGates;
 import com.takipi.api.client.util.cicd.QualityGateReport;
-import com.takipi.api.client.util.regression.*;
+import com.takipi.api.client.util.regression.RateRegression;
+import com.takipi.api.client.util.regression.RegressionInput;
+import com.takipi.api.client.util.regression.RegressionResult;
+import com.takipi.api.client.util.regression.RegressionUtil;
 
-import java.io.PrintStream;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
+
+import static com.takipi.api.client.util.regression.RegressionStringUtil.REGRESSION;
+import static com.takipi.api.client.util.regression.RegressionStringUtil.SEVERE_REGRESSION;
 
 public class ReportBuilder {
 	private ApiClient apiClient;
 	private RegressionInput input;
 	private Config config;
+    private Context context;
 
 	public ReportBuilder(ApiClient apiClient, RegressionInput input, Config config) {
 		this.apiClient = apiClient;
 		this.input = input;
 		this.config = config;
+        context = DependencyInjector.getImplementation(Context.class);
 	}
 
 	private static class ReportVolume {
@@ -33,12 +41,7 @@ public class ReportBuilder {
 		protected Collection<EventResult> filter;
 	}
 
-	private boolean allowEvent(EventResult event, Pattern pattern) {
-
-		if (pattern == null ) {
-			return true;
-		}
-
+	private boolean isPatternMatched(EventResult event, Pattern pattern) {
 		String json = new Gson().toJson(event);
 		boolean result = !pattern.matcher(json).find();
 
@@ -71,54 +74,64 @@ public class ReportBuilder {
 		return result;
 	}
 
-	private void addEvent(Set<EventResult> events, EventResult event,
-		Pattern pattern, PrintStream output, boolean verbose) {
-
-		if (allowEvent(event, pattern)) {
+	private void addIfMatchPattern(Set<EventResult> events, EventResult event, Pattern pattern) {
+		if (isPatternMatched(event, pattern)) {
 			events.add(event);
-		} else if ((output != null) && (verbose)) {
-			output.println(event + " did not match regexFilter and was skipped");
+		} else {
+            printlnForDebug(event + " did not match regexFilter and was skipped");
 		}
 	}
 
-	private Collection<EventResult> filterEvents(RateRegression rateRegression,
-			Pattern pattern, PrintStream output, boolean verbose) {
+	private void printlnForDebug(String message) {
+	    if (config.isDebug()) {
+	        context.getOutputStream().printlnDebug(message);
+        }
+    }
 
+	private Collection<EventResult> filterEvents(RateRegression rateRegression, Pattern pattern) {
 		Set<EventResult> result = new HashSet<>();
 
 		if (pattern != null) {
-
-			for (EventResult event : rateRegression.getNonRegressions()) {
-				addEvent(result, event, pattern, output, verbose);
-			}
-
-			for (EventResult event : rateRegression.getAllNewEvents().values()) {
-				addEvent(result, event, pattern, output, verbose);
-			}
-
-			for (RegressionResult regressionResult : rateRegression.getAllRegressions().values()) {
-				addEvent(result, regressionResult.getEvent(), pattern, output, verbose);
-
-			}
-
+		    rateRegression.getNonRegressions().stream()
+					.forEach(eventResult -> addIfMatchPattern(result, eventResult, pattern));
+			rateRegression.getAllNewEvents().values().stream()
+					.forEach(eventResult -> addIfMatchPattern(result, eventResult, pattern));
+			rateRegression.getAllRegressions().values().stream()
+					.forEach(regressionResult -> addIfMatchPattern(result, regressionResult.getEvent(), pattern));
 		} else {
 			result.addAll(rateRegression.getNonRegressions());
 			result.addAll(rateRegression.getAllNewEvents().values());
-
-			for (RegressionResult regressionResult : rateRegression.getAllRegressions().values()) {
-				result.add(regressionResult.getEvent());
-			}
+			rateRegression.getAllRegressions().values().stream()
+					.forEach(regressionResult -> result.add(regressionResult.getEvent()));
 		}
 
 		return result;
 	}
 
-	private ReportVolume getReportVolume(ApiClient apiClient,
-			RegressionInput input, RateRegression rateRegression,
-			int limit, String regexFilter,  PrintStream output, boolean verbose) {
-
+	private ReportVolume getReportVolume( RateRegression rateRegression, int limit, String regexFilter) {
 		ReportVolume result = new ReportVolume();
 
+		Pattern pattern = getPattern(regexFilter);
+
+		Collection<EventResult> eventsSet = filterEvents(rateRegression, pattern);
+		if (pattern != null) {
+			result.filter = eventsSet;
+		}
+
+		result.topEvents = new ArrayList<>();
+		List<EventResult> events =  getSortedEventsByVolume(eventsSet);
+		events.stream()
+				.filter(eventResult -> eventResult.stats != null)
+				.limit(limit)
+				.forEach(eventResult -> {
+					String arcLink = ProcessQualityGates.getArcLink(apiClient, eventResult.id, input, rateRegression.getActiveWndowStart());
+					result.topEvents.add(new OOReportEvent(eventResult, arcLink));
+				});
+
+		return result;
+	}
+
+	private Pattern getPattern(String regexFilter) {
 		Pattern pattern;
 
 		if ((regexFilter != null) && (regexFilter.length() > 0)) {
@@ -126,26 +139,7 @@ public class ReportBuilder {
 		} else {
 			pattern = null;
 		}
-
-		Collection<EventResult> eventsSet = filterEvents(rateRegression, pattern, output, verbose);
-		List<EventResult> events =  getSortedEventsByVolume(eventsSet);
-
-		if (pattern != null) {
-			result.filter = eventsSet;
-		}
-
-		result.topEvents = new ArrayList<>();
-
-		for (EventResult event : events) {
-			if (event.stats != null) {
-				if (result.topEvents.size() < limit) {
-					String arcLink = ProcessQualityGates.getArcLink(apiClient, event.id, input, rateRegression.getActiveWndowStart());
-					result.topEvents.add(new OOReportEvent(event, arcLink));
-				}
-			}
-		}
-
-		return result;
+		return pattern;
 	}
 
 	public QualityReport build() {
@@ -157,10 +151,6 @@ public class ReportBuilder {
 		boolean resurfacedEvents = config.isResurfacedErrors();
 		boolean runRegressions = config.isRegressionPresent();
 		boolean markedUnstable = config.isMarkUnstable();
-		Context context = DependencyInjector.getImplementation(Context.class);
-		PrintStream output = context.getOutputStream().getPrintStream();
-		boolean verbose = config.isDebug();
-
 
 		//check if total or unique gates are being tested
 		boolean countGate = false;
@@ -178,12 +168,9 @@ public class ReportBuilder {
 		if (countGate || newEvents || resurfacedEvents || regexFilter != null) {
 			try {
 				qualityGateReport = ProcessQualityGates.processCICDInputs(apiClient, input, newEvents, resurfacedEvents,
-					regexFilter, topEventLimit, countGate, output, verbose);
+					regexFilter, topEventLimit, countGate, context.getOutputStream().getPrintStream(), config.isDebug());
 			} catch (Exception e) {
-				if (output != null) {
-					output.println("Error processing CI CD inputs " + e.getMessage());
-				}
-
+			    printlnForDebug("Error processing CI CD inputs " + e.getMessage());
 				failedAPI = true;
 			}
 		}
@@ -194,10 +181,9 @@ public class ReportBuilder {
 		List<OOReportRegressedEvent> regressions = null;
 		boolean hasRegressions = false;
 		if (runRegressions) {
-			rateRegression = RegressionUtil.calculateRateRegressions(apiClient, input, output, verbose);
+			rateRegression = RegressionUtil.calculateRateRegressions(apiClient, input, context.getOutputStream().getPrintStream(), config.isDebug());
 
-			reportVolume = getReportVolume(apiClient, input,
-					rateRegression, topEventLimit, regexFilter, output, verbose);
+			reportVolume = getReportVolume(rateRegression, topEventLimit, regexFilter);
 
 			regressions = getAllRegressions(rateRegression, reportVolume.filter);
 			if (regressions != null && regressions.size() > 0) {
@@ -272,36 +258,26 @@ public class ReportBuilder {
 	}
 
 	private List<OOReportRegressedEvent> getAllRegressions(RateRegression rateRegression, Collection<EventResult> filter) {
-
 		List<OOReportRegressedEvent> result = new ArrayList<OOReportRegressedEvent>();
 
-		for (RegressionResult regressionResult : rateRegression.getCriticalRegressions().values()) {
-
-			if ((filter != null) && (!filter.contains(regressionResult.getEvent()))) {
-				continue;
-			}
-
+		BiConsumer<RegressionResult, String> addToResult = (regressionResult, type) -> {
 			String arcLink = ProcessQualityGates.getArcLink(apiClient, regressionResult.getEvent().id, input, rateRegression.getActiveWndowStart());
+			result.add(new OOReportRegressedEvent(regressionResult, type, arcLink));
+		};
 
-			OOReportRegressedEvent regressedEvent = new OOReportRegressedEvent(regressionResult.getEvent(),
-					regressionResult.getBaselineHits(), regressionResult.getBaselineInvocations(), RegressionStringUtil.SEVERE_REGRESSION, arcLink);
-
-			result.add(regressedEvent);
+		if (filter != null) {
+			rateRegression.getCriticalRegressions().values().stream()
+					.filter(regressionResult -> filter.contains(regressionResult.getEvent()))
+					.forEach(regressionResult -> {
+						addToResult.accept(regressionResult, SEVERE_REGRESSION);
+					});
 		}
 
-		for (RegressionResult regressionResult : rateRegression.getAllRegressions().values()) {
-
-			if (rateRegression.getCriticalRegressions().containsKey(regressionResult.getEvent().id)) {
-				continue;
-			}
-
-			String arcLink = ProcessQualityGates.getArcLink(apiClient, regressionResult.getEvent().id, input, rateRegression.getActiveWndowStart());
-
-			OOReportRegressedEvent regressedEvent = new OOReportRegressedEvent(regressionResult.getEvent(),
-					regressionResult.getBaselineHits(), regressionResult.getBaselineInvocations(), RegressionStringUtil.REGRESSION, arcLink);
-
-			result.add(regressedEvent);
-		}
+		rateRegression.getAllRegressions().values().stream()
+				.filter(regressionResult -> !rateRegression.getCriticalRegressions().containsKey(regressionResult.getEvent().id))
+				.forEach(regressionResult -> {
+					addToResult.accept(regressionResult, REGRESSION);
+				});
 
 		return result;
 	}
