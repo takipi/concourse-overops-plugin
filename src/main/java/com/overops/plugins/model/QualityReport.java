@@ -1,6 +1,7 @@
 package com.overops.plugins.model;
 
 import com.takipi.api.client.util.cicd.OOReportEvent;
+import com.takipi.api.client.util.cicd.QualityGateReport;
 import com.takipi.api.client.util.regression.RateRegression;
 import com.takipi.api.client.util.regression.RegressionInput;
 
@@ -30,9 +31,7 @@ public class QualityReport {
     private final boolean markedUnstable;
 
     public QualityReport(RegressionInput input, RateRegression regression,
-                         List<OOReportRegressedEvent> regressions, List<OOReportEvent> criticalErrors,
-                         List<OOReportEvent> topErrors, List<OOReportEvent> newIssues,
-                         List<OOReportEvent> resurfacedErrors, long eventVolume, int uniqueEventCounts, boolean unstable,
+                         List<OOReportRegressedEvent> regressions, QualityGateReport qualityGateReport, boolean unstable,
                          boolean checkNewGate, boolean checkResurfacedGate, boolean checkCriticalGate, boolean checkVolumeGate,
                          boolean checkUniqueGate, boolean checkRegressionGate, Integer maxEventVolume, Integer maxUniqueVolume, boolean markedUnstable) {
 
@@ -41,17 +40,17 @@ public class QualityReport {
 
         this.regressions = regressions;
         this.allIssues = new ArrayList<OOReportEvent>();
-        this.newIssues = newIssues;
-        this.criticalErrors = criticalErrors;
-        this.topErrors = topErrors;
-        this.resurfacedErrors = resurfacedErrors;
+        this.newIssues = qualityGateReport.getNewErrors();
+        this.criticalErrors = qualityGateReport.getCriticalErrors();
+        this.topErrors = qualityGateReport.getTopErrors();
+        this.resurfacedErrors = qualityGateReport.getResurfacedErrors();
 
         if (regressions != null) {
             allIssues.addAll(regressions);
         }
 
-        this.eventVolume =  eventVolume;
-        this.uniqueEventsCount =  uniqueEventCounts;
+        this.eventVolume =  qualityGateReport.getTotalErrorCount();
+        this.uniqueEventsCount =  qualityGateReport.getUniqueErrorCount();
         this.unstable = unstable;
         this.checkNewGate = checkNewGate;
         this.checkResurfacedGate = checkResurfacedGate;
