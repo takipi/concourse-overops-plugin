@@ -21,20 +21,20 @@ public class Config {
     private String deploymentName;
     private String serviceId;
     private String regexFilter;
-    private boolean markUnstable = false;
-    private Integer printTopIssues = 5;
-    private boolean newEvents = false;
-    private boolean resurfacedErrors = false;
-    private Integer maxErrorVolume = 0;
-    private Integer maxUniqueErrors = 0;
+    private boolean markUnstable;
+    private Integer printTopIssues;
+    private boolean newEvents;
+    private boolean resurfacedErrors;
+    private Integer maxErrorVolume;
+    private Integer maxUniqueErrors;
     private String criticalExceptionTypes;
-    private String activeTimespan = "0";
-    private String baselineTimespan = "0";
-    private Integer minVolumeThreshold = 0;
-    private Double minErrorRateThreshold = 0d;
-    private Double regressionDelta = 0d;
-    private Double criticalRegressionDelta = 0d;
-    private boolean applySeasonality = false;
+    private String activeTimespan;
+    private String baselineTimespan;
+    private Integer minVolumeThreshold;
+    private Double minErrorRateThreshold;
+    private Double regressionDelta;
+    private Double criticalRegressionDelta;
+    private boolean applySeasonality;
 
     private boolean debug = false;
 
@@ -131,8 +131,32 @@ public class Config {
         return maxErrorVolume;
     }
 
+    public boolean isMaxErrorVolume() {
+        return getMaxErrorVolume() != 0;
+    }
+
+    public boolean checkIfMaxVolumeExceeded(long totalErrorsCount) {
+        return isMaxErrorVolume() && totalErrorsCount > getMaxErrorVolume();
+    }
+
     public Integer getMaxUniqueErrors() {
         return maxUniqueErrors;
+    }
+
+    public boolean isMaxUniqueErrors() {
+        return getMaxUniqueErrors() != 0;
+    }
+
+    public boolean checkIfMaxUniqueErrorsExceeded(long uniqueErrorCount) {
+        return isMaxUniqueErrors() && uniqueErrorCount > getMaxUniqueErrors();
+    }
+
+    public boolean isCountGatePresent() {
+        return getMaxErrorVolume() != 0 || getMaxUniqueErrors() != 0;
+    }
+
+    public boolean isSomeGateBesideRegressionToProcess() {
+        return isCountGatePresent() || isNewEvents() || isResurfacedErrors() || getRegexFilter() != null;
     }
 
     public String getCriticalExceptionTypes() {

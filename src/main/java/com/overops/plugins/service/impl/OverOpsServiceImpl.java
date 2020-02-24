@@ -28,7 +28,7 @@ public class OverOpsServiceImpl implements OverOpsService {
 
         RemoteApiClient apiClient = createRemoteApiClient();
         SummarizedView allEventsView = retrieveAllEventsView(apiClient);
-        RegressionInput input = setupRegressionData(allEventsView);
+        RegressionInput input = setupRegressionData(allEventsView.id);
 
         return new ReportBuilder(apiClient, input, config).build();
     }
@@ -70,10 +70,10 @@ public class OverOpsServiceImpl implements OverOpsService {
         }
     }
 
-    private RegressionInput setupRegressionData(SummarizedView allEventsView) {
+    private RegressionInput setupRegressionData(String allEventsViewId) {
         RegressionInput input = new RegressionInput();
         input.serviceId = config.getOverOpsSID();
-        input.viewId = allEventsView.id;
+        input.viewId = allEventsViewId;
         input.applictations = config.getApplicationCollection();
         input.deployments = config.getDeploymentCollection();
         input.criticalExceptionTypes = config.getCriticalExceptionTypesCollection();

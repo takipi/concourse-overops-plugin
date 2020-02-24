@@ -32,8 +32,7 @@ public class QualityReport {
 
     public QualityReport(RegressionInput input, RateRegression regression,
                          List<OOReportRegressedEvent> regressions, QualityGateReport qualityGateReport, boolean unstable,
-                         boolean checkNewGate, boolean checkResurfacedGate, boolean checkCriticalGate, boolean checkVolumeGate,
-                         boolean checkUniqueGate, boolean checkRegressionGate, Integer maxEventVolume, Integer maxUniqueVolume, boolean markedUnstable) {
+                         Config config) {
 
         this.input = input;
         this.regression = regression;
@@ -52,15 +51,15 @@ public class QualityReport {
         this.eventVolume =  qualityGateReport.getTotalErrorCount();
         this.uniqueEventsCount =  qualityGateReport.getUniqueErrorCount();
         this.unstable = unstable;
-        this.checkNewGate = checkNewGate;
-        this.checkResurfacedGate = checkResurfacedGate;
-        this.checkCriticalGate = checkCriticalGate;
-        this.checkVolumeGate = checkVolumeGate;
-        this.checkUniqueGate = checkUniqueGate;
-        this.checkRegressionGate = checkRegressionGate;
-        this.maxEventVolume = maxEventVolume;
-        this.maxUniqueVolume = maxUniqueVolume;
-        this.markedUnstable = markedUnstable;
+        this.checkNewGate = config.isNewEvents();
+        this.checkResurfacedGate = config.isResurfacedErrors();
+        this.checkCriticalGate = input.criticalExceptionTypes != null && input.criticalExceptionTypes.size() > 0;
+        this.checkVolumeGate = config.isMaxErrorVolume();
+        this.checkUniqueGate = config.isMaxUniqueErrors();
+        this.checkRegressionGate = config.isRegressionPresent();
+        this.maxEventVolume =  config.getMaxErrorVolume();
+        this.maxUniqueVolume = config.getMaxUniqueErrors();
+        this.markedUnstable = config.isMarkUnstable();
     }
 
     public RegressionInput getInput() {
