@@ -123,46 +123,33 @@ public class ReportBuilder {
                 failedAPI = true;
             }
         }
+        QualityGatesBesideRegressionProcess qualityGatesBesideRegressionProcess = new QualityGatesBesideRegressionProcess(qualityGateReport).invoke();
 
-        boolean newErrors = processQualityGateErrors(qualityGateReport.getNewErrors());
-        boolean resurfaced = processQualityGateErrors(qualityGateReport.getResurfacedErrors());
-        boolean critical = processQualityGateErrors(qualityGateReport.getCriticalErrors());
-        processQualityGateErrors(qualityGateReport.getTopErrors());
+        List<OOReportRegressedEvent> regressions = getOoReportRegressedEvents();
+        boolean isRegressionsDetected = regressions != null && regressions.size() > 0;
 
-        //run the regression gate
-        RateRegression rateRegression = null;
+        boolean unstable = (failedAPI)
+                || (isRegressionsDetected)
+                || config.checkIfMaxVolumeExceeded(qualityGateReport.getTotalErrorCount())
+                || (config.checkIfMaxUniqueErrorsExceeded(qualityGateReport.getUniqueErrorCount()))
+                || qualityGatesBesideRegressionProcess.isErrorsDetected();
+
+        return new QualityReport(input, regressions, qualityGateReport, unstable, config);
+    }
+
+    private List<OOReportRegressedEvent> getOoReportRegressedEvents() {
         List<OOReportRegressedEvent> regressions = null;
-        boolean hasRegressions = false;
         if (config.isRegressionPresent()) {
-            rateRegression = RegressionUtil.calculateRateRegressions(apiClient, input, context.getOutputStream().getPrintStream(), config.isDebug());
+            RateRegression rateRegression = RegressionUtil.calculateRateRegressions(apiClient, input,
+                    context.getOutputStream().getPrintStream(), config.isDebug());
             ReportVolume reportVolume = getReportVolume(rateRegression);
             regressions = getAllRegressions(rateRegression, reportVolume.filter);
 
             if (regressions != null && regressions.size() > 0) {
-                hasRegressions = true;
                 replaceSourceId(regressions);
             }
         }
-
-        boolean unstable = (failedAPI)
-                || (hasRegressions)
-                || config.checkIfMaxVolumeExceeded(qualityGateReport.getTotalErrorCount())
-                || (config.checkIfMaxUniqueErrorsExceeded(qualityGateReport.getUniqueErrorCount()))
-                || (newErrors)
-                || (resurfaced)
-                || (critical);
-
-        return new QualityReport(input, rateRegression, regressions,
-                qualityGateReport, unstable, config);
-    }
-
-    private boolean processQualityGateErrors(List<OOReportEvent> events) {
-        boolean errorsExist = false;
-        if (events != null && events.size() > 0) {
-            errorsExist = true;
-            replaceSourceId(events);
-        }
-        return errorsExist;
+        return regressions;
     }
 
     /**
@@ -214,6 +201,38 @@ public class ReportBuilder {
 
         public ReportVolume() {
             this.topEvents = new ArrayList<>();;
+        }
+    }
+
+    private class QualityGatesBesideRegressionProcess {
+        private QualityGateReport qualityGateReport;
+        private boolean newErrors;
+        private boolean resurfaced;
+        private boolean critical;
+
+        public QualityGatesBesideRegressionProcess(QualityGateReport qualityGateReport) {
+            this.qualityGateReport = qualityGateReport;
+        }
+
+        public boolean isErrorsDetected() {
+            return  newErrors || resurfaced || critical;
+        }
+
+        public QualityGatesBesideRegressionProcess invoke() {
+            newErrors = processQualityGateErrors(qualityGateReport.getNewErrors());
+            resurfaced = processQualityGateErrors(qualityGateReport.getResurfacedErrors());
+            critical = processQualityGateErrors(qualityGateReport.getCriticalErrors());
+            processQualityGateErrors(qualityGateReport.getTopErrors());
+            return this;
+        }
+
+        private boolean processQualityGateErrors(List<OOReportEvent> events) {
+            boolean errorsExist = false;
+            if (events != null && events.size() > 0) {
+                errorsExist = true;
+                replaceSourceId(events);
+            }
+            return errorsExist;
         }
     }
 }

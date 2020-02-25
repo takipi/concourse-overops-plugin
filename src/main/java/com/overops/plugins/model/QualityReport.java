@@ -17,7 +17,6 @@ public class QualityReport {
     private final List<OOReportEvent> allIssues;
     private final boolean unstable;
     private final RegressionInput input;
-    private final RateRegression regression;
     private final long eventVolume;
     private final int uniqueEventsCount;
     private final boolean checkNewGate;
@@ -30,12 +29,11 @@ public class QualityReport {
     private final Integer maxUniqueVolume;
     private final boolean markedUnstable;
 
-    public QualityReport(RegressionInput input, RateRegression regression,
-                         List<OOReportRegressedEvent> regressions, QualityGateReport qualityGateReport, boolean unstable,
+    public QualityReport(RegressionInput input, List<OOReportRegressedEvent> regressions,
+                         QualityGateReport qualityGateReport, boolean unstable,
                          Config config) {
 
         this.input = input;
-        this.regression = regression;
 
         this.regressions = regressions;
         this.allIssues = new ArrayList<OOReportEvent>();
@@ -64,10 +62,6 @@ public class QualityReport {
 
     public RegressionInput getInput() {
         return input;
-    }
-
-    public RateRegression getRegression() {
-        return regression;
     }
 
     public List<OOReportEvent> getResurfacedErrors() {
