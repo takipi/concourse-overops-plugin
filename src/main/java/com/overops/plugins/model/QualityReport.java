@@ -2,7 +2,6 @@ package com.overops.plugins.model;
 
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import com.takipi.api.client.util.cicd.QualityGateReport;
-import com.takipi.api.client.util.regression.RateRegression;
 import com.takipi.api.client.util.regression.RegressionInput;
 
 import java.util.ArrayList;
@@ -134,5 +133,9 @@ public class QualityReport {
 
     public boolean isMarkedUnstable() {
         return markedUnstable;
+    }
+
+    public boolean isStable() {
+        return !(isMarkedUnstable() && getUnstable());
     }
 }

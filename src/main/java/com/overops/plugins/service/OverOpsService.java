@@ -6,5 +6,5 @@ import com.overops.plugins.model.Config;
 import java.io.IOException;
 
 public interface OverOpsService {
-    QualityReport perform(Config config) throws IOException, InterruptedException;
+    QualityReport produceReport(Config config);
 }

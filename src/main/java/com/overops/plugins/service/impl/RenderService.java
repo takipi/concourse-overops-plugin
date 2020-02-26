@@ -22,24 +22,14 @@ public class RenderService extends Render {
     private QualityGate resurfacedQualityGate;
     private QualityGate increasingQualityGate;
 
-    public RenderService(Context context, QualityReport report) {
-        super(context);
+    public RenderService(QualityReport report) {
+        context.getOutputStream().println("OverOps Quality Report", Ansi.Color.BLACK);
         outputStream = this.context.getOutputStream();
         this.qualityReport = report;
     }
 
     @Override
-    public String getDisplayName() {
-        return "OverOps Quality Report";
-    }
-
-    @Override
-    public boolean isStable() {
-        return !(qualityReport.isMarkedUnstable() && qualityReport.getUnstable());
-    }
-
-    @Override
-    public void render() {
+    public Render render() {
         initQualityGates();
 
         printMainQualityGateStatusSection();
@@ -49,6 +39,8 @@ public class RenderService extends Render {
         printTotalUniqueErrorsSection();
         printQualityGateSection(criticalQualityGate);
         printQualityGateSection(increasingQualityGate);
+
+        return this;
     }
 
     private void printTotalUniqueErrorsSection() {

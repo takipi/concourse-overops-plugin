@@ -3,13 +3,12 @@ package com.overops.plugins.step;
 import com.overops.plugins.core.Step;
 import com.overops.plugins.model.Config;
 import org.apache.commons.lang3.StringUtils;
-import org.fusesource.jansi.Ansi;
 
 
-public class PreparationStep extends Step<String[], Config> {
+public class CreateConfigStep extends Step<String[], Config> {
     @Override
     public Config run(String[] args) {
-        context.getOutputStream().println("OverOps [Step 1/3]: Preparation data...", Ansi.Color.MAGENTA);
+        println("OverOps [Step 1/3]: Preparation data...");
         Config config = new Config(args);
         validation(config);
         return config;

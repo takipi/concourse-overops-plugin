@@ -23,7 +23,7 @@ public class OverOpsServiceImpl implements OverOpsService {
     }
 
     @Override
-    public QualityReport perform(Config config) throws IOException, InterruptedException {
+    public QualityReport produceReport(Config config) {
         this.config = config;
 
         RemoteApiClient apiClient = createRemoteApiClient();
