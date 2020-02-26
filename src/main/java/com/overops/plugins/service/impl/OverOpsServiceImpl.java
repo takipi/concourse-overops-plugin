@@ -1,6 +1,6 @@
 package com.overops.plugins.service.impl;
 
-import com.overops.plugins.Context;
+import com.overops.plugins.model.Context;
 import com.overops.plugins.DependencyInjector;
 import com.overops.plugins.model.Config;
 import com.overops.plugins.model.QualityReport;
@@ -11,7 +11,6 @@ import com.takipi.api.client.data.view.SummarizedView;
 import com.takipi.api.client.util.regression.RegressionInput;
 import com.takipi.api.client.util.view.ViewUtil;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class OverOpsServiceImpl implements OverOpsService {

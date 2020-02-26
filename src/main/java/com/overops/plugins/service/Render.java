@@ -1,6 +1,6 @@
 package com.overops.plugins.service;
 
-import com.overops.plugins.Context;
+import com.overops.plugins.model.Context;
 import com.overops.plugins.DependencyInjector;
 
 public abstract class Render {

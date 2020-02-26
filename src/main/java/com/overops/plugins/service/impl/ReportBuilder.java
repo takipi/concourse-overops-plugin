@@ -1,7 +1,7 @@
 package com.overops.plugins.service.impl;
 
 import com.google.gson.Gson;
-import com.overops.plugins.Context;
+import com.overops.plugins.model.Context;
 import com.overops.plugins.DependencyInjector;
 import com.overops.plugins.model.Config;
 import com.overops.plugins.model.OOReportRegressedEvent;

@@ -1,6 +1,5 @@
 package com.overops.plugins.step;
 
-import com.overops.plugins.core.Step;
 import com.overops.plugins.model.Config;
 import org.apache.commons.lang3.StringUtils;
 

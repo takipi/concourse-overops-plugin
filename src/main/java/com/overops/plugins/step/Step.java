@@ -1,6 +1,6 @@
-package com.overops.plugins.core;
+package com.overops.plugins.step;
 
-import com.overops.plugins.Context;
+import com.overops.plugins.model.Context;
 import com.overops.plugins.DependencyInjector;
 import org.fusesource.jansi.Ansi;
 

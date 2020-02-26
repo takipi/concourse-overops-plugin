@@ -1,6 +1,5 @@
 package com.overops.plugins.service.impl;
 
-import com.overops.plugins.Context;
 import com.overops.plugins.model.*;
 import com.overops.plugins.model.yaml.OOReportYaml;
 import com.overops.plugins.model.yaml.QualityGateSummaryYaml;

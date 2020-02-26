@@ -1,5 +1,6 @@
 package com.overops.plugins;
 
+import com.overops.plugins.model.Context;
 import com.overops.plugins.service.OutputWriter;
 import com.overops.plugins.service.OverOpsService;
 import com.overops.plugins.service.impl.AnsiWriter;

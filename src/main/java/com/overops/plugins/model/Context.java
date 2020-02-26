@@ -1,5 +1,6 @@
-package com.overops.plugins;
+package com.overops.plugins.model;
 
+import com.overops.plugins.DependencyInjector;
 import com.overops.plugins.service.OutputWriter;
 
 public class Context {
