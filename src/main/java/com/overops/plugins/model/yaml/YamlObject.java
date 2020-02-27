@@ -1,4 +1,4 @@
-package com.overops.plugins.model;
+package com.overops.plugins.model.yaml;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

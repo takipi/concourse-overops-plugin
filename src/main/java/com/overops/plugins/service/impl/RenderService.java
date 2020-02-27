@@ -1,7 +1,9 @@
 package com.overops.plugins.service.impl;
 
-import com.overops.plugins.Context;
 import com.overops.plugins.model.*;
+import com.overops.plugins.model.yaml.OOReportYaml;
+import com.overops.plugins.model.yaml.QualityGateSummaryYaml;
+import com.overops.plugins.model.yaml.YamlObject;
 import com.overops.plugins.service.Render;
 import com.takipi.api.client.util.cicd.OOReportEvent;
 import org.fusesource.jansi.Ansi;
@@ -12,31 +14,21 @@ import java.util.stream.Stream;
 
 public class RenderService extends Render {
 
-    private ReportBuilder.QualityReport qualityReport;
+    private QualityReport qualityReport;
     private OutputWriter outputStream;
     private QualityGate criticalQualityGate;
     private QualityGate newQualityGate;
     private QualityGate resurfacedQualityGate;
     private QualityGate increasingQualityGate;
 
-    public RenderService(Context context, ReportBuilder.QualityReport report) {
-        super(context);
+    public RenderService(QualityReport report) {
+        context.getOutputStream().println("OverOps Quality Report", Ansi.Color.BLACK);
         outputStream = this.context.getOutputStream();
         this.qualityReport = report;
     }
 
     @Override
-    public String getDisplayName() {
-        return "OverOps Quality Report";
-    }
-
-    @Override
-    public boolean isStable() {
-        return !(qualityReport.isMarkedUnstable() && qualityReport.getUnstable());
-    }
-
-    @Override
-    public void render() {
+    public Render render() {
         initQualityGates();
 
         printMainQualityGateStatusSection();
@@ -46,6 +38,8 @@ public class RenderService extends Render {
         printTotalUniqueErrorsSection();
         printQualityGateSection(criticalQualityGate);
         printQualityGateSection(increasingQualityGate);
+
+        return this;
     }
 
     private void printTotalUniqueErrorsSection() {
@@ -114,15 +108,15 @@ public class RenderService extends Render {
 
         if (toMarkUnstable) {
             if (isActuallyUnstable) {
-                outputStream.error(unstableBuildWithToMarkUnstableSetSummary);
+                outputStream.printlnError(unstableBuildWithToMarkUnstableSetSummary);
             } else {
-                outputStream.success(passedSummary);
+                outputStream.printlnSuccess(passedSummary);
             }
         } else {
             if (isActuallyUnstable) {
                 outputStream.yellowFgPrintln(unstableBuildWithToMarkUnstableNotSetSummary);
             } else {
-                outputStream.success(passedSummary);
+                outputStream.printlnSuccess(passedSummary);
             }
         }
 

@@ -1,4 +1,6 @@
-package com.overops.plugins.model;
+package com.overops.plugins.model.yaml;
+
+import com.overops.plugins.model.SummaryRow;
 
 import java.util.LinkedHashMap;
 

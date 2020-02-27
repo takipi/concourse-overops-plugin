@@ -1,17 +1,20 @@
 package com.overops.plugins.service;
 
-import com.overops.plugins.model.YamlObject;
-import com.takipi.api.client.util.cicd.OOReportEvent;
+import com.overops.plugins.model.yaml.YamlObject;
 import org.fusesource.jansi.Ansi;
 
-import java.util.List;
+import java.io.PrintStream;
 import java.util.function.BiFunction;
 
 public interface OutputWriter {
 
-    void error(String message);
+    PrintStream getPrintStream();
 
-    void success(String message);
+    void printlnError(String message);
+
+    void printlnSuccess(String message);
+
+    void printlnDebug(String message);
 
     void yellowFgPrintln(String message);
 
@@ -20,8 +23,6 @@ public interface OutputWriter {
     void println(String s, Ansi.Color color);
 
     void printStatementHeaders(String... s);
-
-    void table(List<String> headers, List<OOReportEvent> body);
 
     void printYamlObject(YamlObject yamlObject);
 
