@@ -24,11 +24,10 @@ resources:
       overops_sid: S111111
       overops_api_key: ((overops_api_key))
       application_name: App1
-      deployment_name: ((deployment_name))
       mark_unstable: true
       new_events: true
       resurfaced_errors: true
-      debug: false
+      debug: true
 
 jobs:
   - name: demo
@@ -48,42 +47,12 @@ jobs:
           outputs:
             - name: files
       - get: overops-report
-        inputs:
-          - files
         params:
-          deployment_name:
-            file: ./files/created_file
-        get_params:
-          mark_unstable: false
+          deployment_name: ((deployment_name))
           debug: false
 ```
 
 ## Configuration parameters
-
-### Reading parameters from files
-
-Any parameter can be read from existing file on filesystem with following construction:
-
-```yaml
-- put: overops-report
-  inputs:
-    - files
-  get_params:
-    param_name:
-      file: files/my/file
-```
-
-Where `inputs` are existing output from previous steps
-
-### `deployment_name`
-
-`deployment_name` is a parameter that used to version the resources and best to provide it dynamically from file (as example above)
-into `params` section.
-
-### All parameters references
-
-All of the following parameters can be provided globally in the Resource `source` section as well as can be overwritten on per step basis
-in the `get_params` section of `put` step.
 
 `deployment_name` is an exception and need to be provided in the `params` section of `put` step, as described in the example above.
 
@@ -123,9 +92,7 @@ Checks OverOps API responsiveness
 
 ### `out`
 
-Creates resource version and triggers the `in` script.
-
-**Always trigger resource via `put` step**
+no-op
 
 ### `in`
 
