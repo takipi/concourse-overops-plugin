@@ -10,25 +10,25 @@ example file name: `overops-resource.yml`
 
 ```yaml
 resource_types:
-- name: overops-resource
-  type: docker-image
-  source:
-    repository: overops/concourse-resource
-    tag: latest
+  - name: overops-resource
+    type: docker-image
+    source:
+      repository: overops/concourse-resource
+      tag: latest
 
 resources:
-- name: overops-report
-  type: overops-resource
-  source:
-    overops_url: https://api.overops.com
-    overops_sid: S111111
-    overops_api_key: ((overops_api_key))
-    application_name: App1
-    deployment_name: Dep1
-    mark_unstable: true
-    new_events: true
-    resurfaced_errors: true
-    debug: false
+  - name: overops-report
+    type: overops-resource
+    source:
+      overops_url: https://api.overops.com
+      overops_sid: S111111
+      overops_api_key: ((overops_api_key))
+      application_name: App1
+      deployment_name: ((deployment_name))
+      mark_unstable: true
+      new_events: true
+      resurfaced_errors: true
+      debug: false
 
 jobs:
   - name: demo
@@ -47,7 +47,7 @@ jobs:
               - date +%s > ./files/created_file
           outputs:
             - name: files
-      - put: overops-report
+      - get: overops-report
         inputs:
           - files
         params:

@@ -72,6 +72,7 @@ public class AnsiWriter implements OutputWriter {
     public void printYamlObject(YamlObject yamlObject) {
         printYamlObject(yamlObject, null);
     }
+
     @Override
     public void printYamlObject(YamlObject yamlObject, BiFunction<String, String, Ansi.Color> getPropertyValueFgColor) {
         String column = ":";

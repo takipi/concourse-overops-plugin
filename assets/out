@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source $CONCOURSE_RESOURCES/shared
+set -e
 
-# generate timestamp bases version, which will automatically trigger the "in" script
-jq -n --argjson  version "$VERSION_OUT" '{"version":$version}' 3>&1
+echo "OUT action not supported by OverOps resource" 1>&2
+exit 1

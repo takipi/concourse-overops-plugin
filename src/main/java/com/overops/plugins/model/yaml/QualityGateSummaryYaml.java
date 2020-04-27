@@ -1,6 +1,6 @@
 package com.overops.plugins.model.yaml;
 
-import com.overops.plugins.model.SummaryRow;
+import com.overops.report.service.model.QualityGateTestResults;
 
 import java.util.LinkedHashMap;
 
@@ -10,11 +10,12 @@ public class QualityGateSummaryYaml extends YamlObject {
         super(name);
     }
 
-    public void addSummaryRow(SummaryRow summaryRow) {
+    public void addSummaryRow(QualityGateTestResults qualityGate) {
         LinkedHashMap<String, String> map = new LinkedHashMap<>();
-        map.put("name", summaryRow.getGateName());
-        map.put("status", summaryRow.getGateStatus());
-        map.put("volume", summaryRow.getTotal());
+        // TODO think about setting the name on QualityGateTestResults
+        map.put("Name", qualityGate.getMessage());
+        map.put("Status", qualityGate.isPassed() ? "Passed" : "Failed");
+        map.put("Errors", Long.toString(qualityGate.getErrorCount()));
         simpleProperties.add(map);
     }
 }

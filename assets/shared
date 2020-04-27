@@ -66,15 +66,10 @@ OVEROPS_CRITICAL_REGRESSION_DELTA=$(expand_param "${OVEROPS_CRITICAL_REGRESSION_
 OVEROPS_APPLY_SEASONALITY=$(expand_param "${OVEROPS_APPLY_SEASONALITY:-$(jq -r '.source.apply_seasonality | values' <<< $input)}")
 OVEROPS_DEBUG=$(expand_param "${OVEROPS_DEBUG:-$(jq -r '.source.debug | values' <<< $input)}")
 
-# setting version to the provided deployment name
-VERSION_OUT="{\"deployment\": \"${OVEROPS_DEPLOYMENT_NAME}\"}"
-
-# setting deployment_name to the resource version version
-DEPLOYMENT=$(jq -r '.version.deployment // empty' <<< $input)
+# Set version to be used in main script (in, out, check)
 VERSION_IN='{}'
-if [ -n "$DEPLOYMENT" ]; then
-  VERSION_IN="{\"deployment\": \"$DEPLOYMENT\"}"
-  OVEROPS_DEPLOYMENT_NAME=$DEPLOYMENT
+if [ -n "$OVEROPS_DEPLOYMENT_NAME" ]; then
+  VERSION_IN="{\"deployment\": \"$OVEROPS_DEPLOYMENT_NAME\"}"
 fi
 
 # prepare the execution cmd adding the cli parameter only if it was provided as Concourse job parameter
