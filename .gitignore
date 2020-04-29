@@ -26,6 +26,8 @@ target/*
 */target/*
 bin/
 
+# idea
+*.iml
 
 # VSC
 .settings
