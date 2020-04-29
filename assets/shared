@@ -24,6 +24,8 @@ OVEROPS_SID=$(jq -r '.params.overops_sid | values' <<< $input)
 OVEROPS_API_KEY=$(jq -r '.params.overops_api_key | values' <<< $input)
 OVEROPS_APPLICATION_NAME=$(jq -r '.params.application_name | values' <<< $input)
 OVEROPS_DEPLOYMENT_NAME=$(jq -r '.params.deployment_name | values' <<< $input)
+OVEROPS_APPLICATION_FILE=$(jq -r '.params.application_file | values' <<< $input)
+OVEROPS_DEPLOYMENT_FILE=$(jq -r '.params.deployment_file | values' <<< $input)
 OVEROPS_SERVICE_ID=$(jq -r '.params.service_id | values' <<< $input)
 OVEROPS_REGEX_FILTER=$(jq -r '.params.regex_filter | values' <<< $input)
 OVEROPS_MARK_UNSTABLE=$(jq -r '.params.mark_unstable | values' <<< $input)
@@ -48,6 +50,8 @@ OVEROPS_SID=$(expand_param "${OVEROPS_SID:-$(jq -r '.source.overops_sid | values
 OVEROPS_API_KEY=$(expand_param "${OVEROPS_API_KEY:-$(jq -r '.source.overops_api_key | values' <<< $input)}")
 OVEROPS_APPLICATION_NAME=$(expand_param "${OVEROPS_APPLICATION_NAME:-$(jq -r '.source.application_name | values' <<< $input)}")
 OVEROPS_DEPLOYMENT_NAME=$(expand_param "${OVEROPS_DEPLOYMENT_NAME:-$(jq -r '.source.deployment_name | values' <<< $input)}")
+OVEROPS_APPLICATION_FILE=$(expand_param "${OVEROPS_APPLICATION_FILE:-$(jq -r '.source.application_file | values' <<< $input)}")
+OVEROPS_DEPLOYMENT_FILE=$(expand_param "${OVEROPS_DEPLOYMENT_FILE:-$(jq -r '.source.deployment_file | values' <<< $input)}")
 OVEROPS_SERVICE_ID=$(expand_param "${OVEROPS_SERVICE_ID:-$(jq -r '.source.service_id | values' <<< $input)}")
 OVEROPS_REGEX_FILTER=$(expand_param "${OVEROPS_REGEX_FILTER:-$(jq -r '.source.regex_filter | values' <<< $input)}")
 OVEROPS_MARK_UNSTABLE=$(expand_param "${OVEROPS_MARK_UNSTABLE:-$(jq -r '.source.mark_unstable | values' <<< $input)}")
@@ -66,7 +70,15 @@ OVEROPS_CRITICAL_REGRESSION_DELTA=$(expand_param "${OVEROPS_CRITICAL_REGRESSION_
 OVEROPS_APPLY_SEASONALITY=$(expand_param "${OVEROPS_APPLY_SEASONALITY:-$(jq -r '.source.apply_seasonality | values' <<< $input)}")
 OVEROPS_DEBUG=$(expand_param "${OVEROPS_DEBUG:-$(jq -r '.source.debug | values' <<< $input)}")
 
-# Set version to be used in main script (in, out, check)
+# Use the application file and deployment file for the OVEROPS_APPLICATION_NAME and OVEROPS_DEPLOYMENT_NAME if it exists
+# This is used so the application names and deployment names can be dynamic per build
+if [ -n "$OVEROPS_APPLICATION_FILE" ]; then
+  OVEROPS_APPLICATION_NAME=$(cat $OVEROPS_APPLICATION_FILE)
+fi
+if [ -n "$OVEROPS_DEPLOYMENT_FILE" ]; then
+  OVEROPS_DEPLOYMENT_NAME=$(cat $OVEROPS_DEPLOYMENT_FILE)
+fi
+
 VERSION_IN='{}'
 if [ -n "$OVEROPS_DEPLOYMENT_NAME" ]; then
   VERSION_IN="{\"deployment\": \"$OVEROPS_DEPLOYMENT_NAME\"}"

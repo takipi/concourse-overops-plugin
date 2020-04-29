@@ -1,6 +1,10 @@
 #!/bin/bash
 
+source $CONCOURSE_RESOURCES/shared
+
 set -e
 
-echo "OUT action not supported by OverOps resource" 1>&2
-exit 1
+metadata=$($cmd)
+isStable=$?
+jq -n --argjson version "$VERSION_IN" '{"version":$version}' 3>&1
+exit $isStable

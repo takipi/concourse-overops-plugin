@@ -1,18 +1,3 @@
 #!/bin/bash
-set -e # exit on error
-source $CONCOURSE_RESOURCES/shared
 
-# check if API responds, expected resource versions will be generated on demand by "out" script
-url="${OVEROPS_URL}/api/v1/test"
-status_code=$(curl -o /dev/null --silent --head --write-out '%{http_code}\n' $url)
-
-# If server responsive the return version, otherwise fail.
-# Unless the build should continue to work regardless failure.
-if [ $status_code -eq "200" ] || [ ! $OVEROPS_MARK_UNSTABLE ]
-then
-    # TODO Think about making the version more of a status code that the system is up
-    jq -n --argjson version "$VERSION_IN" 'if ($version|length > 0) then [$version] else [] end' 3>&1
-else
-    echo "${OVEROPS_URL} responded with unexpected status code ${status_code}" 1>&2
-    exit 1
-fi
+echo "[]"
