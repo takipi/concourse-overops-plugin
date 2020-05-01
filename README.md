@@ -69,10 +69,10 @@ Parameter | Required | Default Value | Description
 overops_url | true | --- | The OverOps API Endpoint(Saas: https://api.overops.com)
 overops_sid | true | --- | The OverOps environment identifier (e.g S4567) to inspect data for this build
 overops_api_key | true | --- | API Key for interaction with OverOps API
-application_name | true | --- | This or application_file are required. Use this parameter if the application name will be static. [Application Name](https://doc.overops.com/docs/naming-your-application-server-deployment) as specified in OverOps
-application_file | true | --- | This or application_name are required. Use this parameter if the application name will be dynamic. This parameter will overwrite the application_name parameter if defined. [Application Name](https://doc.overops.com/docs/naming-your-application-server-deployment) as specified in OverOps
+application_name | false | --- | Use this parameter if the application name will be static. [Application Name](https://doc.overops.com/docs/naming-your-application-server-deployment) as specified in OverOps
+application_file | false | --- | Use this parameter if the application name will be read from a file (dynamic). This parameter will overwrite the application_name parameter if defined. [Application Name](https://doc.overops.com/docs/naming-your-application-server-deployment) as specified in OverOps
 deployment_name  | false | --- | Use this parameter if the deployement_name will be static. [Deployment Name](https://doc.overops.com/docs/naming-your-application-server-deployment) as specified in OverOps
-deployment_file  | false | --- | Use this parameter if the deployement_name will be dynamic. This parameter will overwrite the deployment_name parameter if defined. [Deployment Name](https://doc.overops.com/docs/naming-your-application-server-deployment) as specified in OverOps
+deployment_file  | false | --- | Use this parameter if the deployement_name will be read from a file (dynamic). This parameter will overwrite the deployment_name parameter if defined. [Deployment Name](https://doc.overops.com/docs/naming-your-application-server-deployment) as specified in OverOps
 regex_filter     | false | | A way to filter out specific event types from affecting the outcome of the OverOps Reliability report.
 mark_unstable    | false | false | If set to `true` the build will be failed if any of the above gates are met
 print_top_issues  | false | 5 | Prints the top X events (as provided by this parameter) with the highest volume of errors detected within the active time window, This is useful when used in conjunction with Max Error Volume to identify the errors which caused a build to fail
