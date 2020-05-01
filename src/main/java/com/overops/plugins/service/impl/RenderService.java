@@ -13,6 +13,9 @@ import com.overops.plugins.service.OutputWriter;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static com.overops.report.service.model.QualityGateTestResults.TestType.TOTAL_EVENTS_TEST;
+import static com.overops.report.service.model.QualityGateTestResults.TestType.UNIQUE_EVENTS_TEST;
+
 public class RenderService extends Render {
 
     private QualityReport qualityReport;
@@ -38,7 +41,11 @@ public class RenderService extends Render {
 
         return this;
     }
-
+    
+    public OutputWriter getOutputStream() {
+        return outputStream;
+    }
+    
     private void printMainQualityGateStatusSection() {
         QualityReport.ReportStatus reportStatus = qualityReport.getStatusCode();
         String message = qualityReport.getStatusMsg();
@@ -56,14 +63,12 @@ public class RenderService extends Render {
 
     private void printQualityGateSection(QualityGateTestResults qualityGate) {
         if(qualityGate != null) {
-            // TODO add type in the quality gate so check doesn't have to be done on error count and events == null
-            // This means the gate is Unique or Total so use the Top Errors List
             List<QualityGateEvent> events = qualityGate.getEvents();
-            if(events == null && qualityGate.getErrorCount() > 0) {
+            if(UNIQUE_EVENTS_TEST.equals(qualityGate.getTestType()) || TOTAL_EVENTS_TEST.equals(qualityGate.getTestType())) {
                 events = getTopEvents();
             }
 
-            YamlObject eventYaml = new EventYaml(events);
+            YamlObject eventYaml = new EventYaml(events, qualityGate.getTestType());
             outputStream.printStatementHeaders(qualityGate.getMessage());
             if(!qualityGate.isPassed()) {
                 outputStream.printYamlObject(eventYaml);

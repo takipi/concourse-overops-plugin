@@ -23,7 +23,7 @@ public class AnsiWriter implements OutputWriter {
         this.printStream = printStream;
 
         propertyColor = Ansi.Color.BLUE;
-        propertyValueColor = Ansi.Color.CYAN;
+        propertyValueColor = Ansi.Color.WHITE;
     }
 
     @Override
@@ -50,7 +50,7 @@ public class AnsiWriter implements OutputWriter {
     public void yellowFgPrintln(String message) {
         printStream.println(ansi().fgBrightYellow().a(message).reset().toString());
     }
-
+    
     @Override
     public void print(String s, Ansi.Color color) {
         printStream.print(ansi().fg(color).a(s).reset().toString());

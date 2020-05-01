@@ -14,6 +14,7 @@ public class Config {
     private String overOpsAPIKey;
     private String serviceId;
     private QualityReportParams reportParams;
+    private boolean debug;
 
     public Config(String[] args) {
         Map<String, String> argsMap = argsToMap(args);
@@ -37,13 +38,13 @@ public class Config {
         params.setMinErrorRateThreshold(Double.parseDouble(argsMap.getOrDefault("minErrorRateThreshold", "0")));
         params.setRegressionDelta(Double.parseDouble(argsMap.getOrDefault("regressionDelta", "0")));
         params.setApplySeasonality(Boolean.parseBoolean(argsMap.getOrDefault("applySeasonality", "false")));
-        params.setDebug(Boolean.parseBoolean(argsMap.getOrDefault("debug", "false")));
 
         reportParams = params;
         overOpsURL = argsMap.get("overOpsURL");
         overOpsSID = argsMap.get("overOpsSID");
         overOpsAPIKey = argsMap.get("overOpsAPIKey");
         serviceId = argsMap.getOrDefault("serviceId", overOpsSID);
+        debug = Boolean.parseBoolean(argsMap.getOrDefault("debug", "false"));
     }
 
     private Map<String, String> argsToMap(String[] args) {
@@ -74,5 +75,9 @@ public class Config {
 
     public QualityReportParams getReportParams() {
         return reportParams;
+    }
+    
+    public boolean isDebug() {
+        return debug;
     }
 }
