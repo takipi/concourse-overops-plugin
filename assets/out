@@ -2,5 +2,9 @@
 
 source $CONCOURSE_RESOURCES/shared
 
-# generate timestamp bases version, which will automatically trigger the "in" script
-jq -n --argjson  version "$VERSION_OUT" '{"version":$version}' 3>&1
+set -e
+
+metadata=$($cmd)
+isStable=$?
+jq -n --argjson version "$VERSION_IN" '{"version":$version}' 3>&1
+exit $isStable

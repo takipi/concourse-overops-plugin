@@ -2,9 +2,7 @@ package com.overops.plugins;
 
 import com.overops.plugins.model.Context;
 import com.overops.plugins.service.OutputWriter;
-import com.overops.plugins.service.OverOpsService;
 import com.overops.plugins.service.impl.AnsiWriter;
-import com.overops.plugins.service.impl.OverOpsServiceImpl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +15,6 @@ public class DependencyInjector {
 
     static {
         map.put(OutputWriter.class, () -> new AnsiWriter(System.err));
-        map.put(OverOpsService.class, () -> new OverOpsServiceImpl());
         map.put(Context.class, Context::new);
     }
 

@@ -21,7 +21,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <fileName>concourse-overops</fileName>
-    <version.takipi>2.30.0</version.takipi>
+    <version.takipi>2.32.0</version.takipi>
     <version.fasterxml>2.10.1</version.fasterxml>
   </properties>
 
@@ -34,6 +34,11 @@
     <dependency>
       <groupId>com.takipi</groupId>
       <artifactId>api-client-util</artifactId>
+      <version>${version.takipi}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.takipi</groupId>
+      <artifactId>report-service</artifactId>
       <version>${version.takipi}</version>
     </dependency>
     <dependency>
