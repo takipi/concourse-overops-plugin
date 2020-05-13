@@ -14,6 +14,7 @@ public class Config {
     private String overOpsAPIKey;
     private String serviceId;
     private QualityReportParams reportParams;
+    private boolean showEventsForPassedGates;
     private boolean debug;
 
     public Config(String[] args) {
@@ -31,12 +32,10 @@ public class Config {
         params.setMaxErrorVolume(Integer.parseInt(argsMap.getOrDefault("maxErrorVolume", "0")));
         params.setMaxUniqueErrors(Integer.parseInt(argsMap.getOrDefault("maxUniqueErrors", "0")));
         params.setCriticalExceptionTypes(argsMap.getOrDefault("criticalExceptionTypes", ""));
-        params.setCriticalRegressionDelta(Double.parseDouble(argsMap.getOrDefault("criticalRegressionDelta", "0")));
         params.setActiveTimespan(argsMap.getOrDefault("activeTimespan", "0"));
         params.setBaselineTimespan(argsMap.getOrDefault("baselineTimespan", "0"));
         params.setMinVolumeThreshold(Integer.parseInt(argsMap.getOrDefault("minVolumeThreshold", "0")));
         params.setMinErrorRateThreshold(Double.parseDouble(argsMap.getOrDefault("minErrorRateThreshold", "0")));
-        params.setRegressionDelta(Double.parseDouble(argsMap.getOrDefault("regressionDelta", "0")));
         params.setApplySeasonality(Boolean.parseBoolean(argsMap.getOrDefault("applySeasonality", "false")));
 
         reportParams = params;
@@ -44,6 +43,7 @@ public class Config {
         overOpsSID = argsMap.get("overOpsSID");
         overOpsAPIKey = argsMap.get("overOpsAPIKey");
         serviceId = argsMap.getOrDefault("serviceId", overOpsSID);
+        showEventsForPassedGates = Boolean.parseBoolean(argsMap.getOrDefault("showEventsForPassedGates", "false"));
         debug = Boolean.parseBoolean(argsMap.getOrDefault("debug", "false"));
     }
 
@@ -75,6 +75,10 @@ public class Config {
 
     public QualityReportParams getReportParams() {
         return reportParams;
+    }
+    
+    public boolean isShowEventsForPassedGates() {
+        return showEventsForPassedGates;
     }
     
     public boolean isDebug() {

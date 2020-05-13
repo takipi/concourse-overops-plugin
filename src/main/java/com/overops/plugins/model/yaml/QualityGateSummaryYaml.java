@@ -25,8 +25,6 @@ public class QualityGateSummaryYaml extends YamlObject {
                 return "Critical";
             case NEW_EVENTS_TEST:
                 return "New";
-            case REGRESSION_EVENTS_TEST:
-                return "Regression";
             case RESURFACED_EVENTS_TEST:
                 return "Resurfaced";
             case TOTAL_EVENTS_TEST:

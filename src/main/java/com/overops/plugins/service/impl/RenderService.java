@@ -20,11 +20,13 @@ public class RenderService extends Render {
 
     private QualityReport qualityReport;
     private OutputWriter outputStream;
+    private boolean showEventsForPassedGates;
 
-    public RenderService(QualityReport report) {
+    public RenderService(QualityReport report, boolean showEventsForPassedGates) {
         context.getOutputStream().println("OverOps Quality Report", Ansi.Color.WHITE);
         outputStream = this.context.getOutputStream();
         this.qualityReport = report;
+        this.showEventsForPassedGates = showEventsForPassedGates;
     }
 
     @Override
@@ -32,12 +34,11 @@ public class RenderService extends Render {
         printMainQualityGateStatusSection();
         printQualityGatesSummarySection();
 
-        printQualityGateSection(qualityReport.getNewErrorsTestResults());
-        printQualityGateSection(qualityReport.getResurfacedErrorsTestResults());
-        printQualityGateSection(qualityReport.getTotalErrorsTestResults());
-        printQualityGateSection(qualityReport.getUniqueErrorsTestResults());
-        printQualityGateSection(qualityReport.getCriticalErrorsTestResults());
-        printQualityGateSection(qualityReport.getRegressionErrorsTestResults());
+        printQualityGateSection(qualityReport.getNewErrorsTestResults(), showEventsForPassedGates);
+        printQualityGateSection(qualityReport.getResurfacedErrorsTestResults(), showEventsForPassedGates);
+        printQualityGateSection(qualityReport.getTotalErrorsTestResults(), showEventsForPassedGates);
+        printQualityGateSection(qualityReport.getUniqueErrorsTestResults(), showEventsForPassedGates);
+        printQualityGateSection(qualityReport.getCriticalErrorsTestResults(), showEventsForPassedGates);
 
         return this;
     }
@@ -61,7 +62,7 @@ public class RenderService extends Render {
         printSeparator();
     }
 
-    private void printQualityGateSection(QualityGateTestResults qualityGate) {
+    private void printQualityGateSection(QualityGateTestResults qualityGate, boolean showEventsForPassedGates) {
         if(qualityGate != null) {
             List<QualityGateEvent> events = qualityGate.getEvents();
             if(UNIQUE_EVENTS_TEST.equals(qualityGate.getTestType()) || TOTAL_EVENTS_TEST.equals(qualityGate.getTestType())) {
@@ -70,7 +71,7 @@ public class RenderService extends Render {
 
             YamlObject eventYaml = new EventYaml(events, qualityGate.getTestType());
             outputStream.printStatementHeaders(qualityGate.getMessage());
-            if(!qualityGate.isPassed()) {
+            if(!qualityGate.isPassed() || (showEventsForPassedGates && events != null && !events.isEmpty())) {
                 outputStream.printYamlObject(eventYaml);
             }
 
@@ -101,7 +102,7 @@ public class RenderService extends Render {
     private YamlObject getSummaryYamlObject() {
         QualityGateSummaryYaml qualityGateSummaryYaml = new QualityGateSummaryYaml("Gates");
 
-        Stream.of(qualityReport.getNewErrorsTestResults(), qualityReport.getResurfacedErrorsTestResults(), qualityReport.getTotalErrorsTestResults(), qualityReport.getUniqueErrorsTestResults(), qualityReport.getCriticalErrorsTestResults(), qualityReport.getRegressionErrorsTestResults()).forEach( qualityGate -> {
+        Stream.of(qualityReport.getNewErrorsTestResults(), qualityReport.getResurfacedErrorsTestResults(), qualityReport.getTotalErrorsTestResults(), qualityReport.getUniqueErrorsTestResults(), qualityReport.getCriticalErrorsTestResults()).forEach( qualityGate -> {
             if(qualityGate != null) {
                 qualityGateSummaryYaml.addSummaryRow(qualityGate);
             }

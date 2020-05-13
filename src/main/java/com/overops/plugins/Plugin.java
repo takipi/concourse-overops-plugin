@@ -33,7 +33,7 @@ public class Plugin {
     
                 QualityReportExceptionDetails exceptionDetails = qualityReport.getExceptionDetails();
                 if(exceptionDetails == null) {
-                    new RenderService(qualityReport).render();
+                    new RenderService(qualityReport, config.isShowEventsForPassedGates()).render();
                 } else {
                     context.getOutputStream().println("OverOps was unable to generate a Quality Report.", Ansi.Color.WHITE);
                     context.getOutputStream().printlnError(exceptionDetails.getExceptionMessage());
