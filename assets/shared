@@ -39,9 +39,8 @@ OVEROPS_ACTIVE_TIMESPAN=$(jq -r '.params.active_timespan | values' <<< $input)
 OVEROPS_BASE_LINE_TIMESPAN=$(jq -r '.params.baseline_timespan | values' <<< $input)
 OVEROPS_MIN_VOLUME_THRESHOLD=$(jq -r '.params.min_volume_threshold | values' <<< $input)
 OVEROPS_MIN_ERROR_RATE_THRESHOLD=$(jq -r '.params.min_error_rate_threshold | values' <<< $input)
-OVEROPS_REGRESSION_DELTA=$(jq -r '.params.regression_delta | values' <<< $input)
-OVEROPS_CRITICAL_REGRESSION_DELTA=$(jq -r '.params.critical_regression_delta | values' <<< $input)
 OVEROPS_APPLY_SEASONALITY=$(jq -r '.params.apply_seasonality | values' <<< $input)
+OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES=$(jq -r '.params.show_events_for_passed_gates | values' <<< $input)
 OVEROPS_DEBUG=$(jq -r '.params.debug | values' <<< $input)
 
 # Set global level parameters, if the local level ones where not set
@@ -65,9 +64,8 @@ OVEROPS_ACTIVE_TIMESPAN=$(expand_param "${OVEROPS_ACTIVE_TIMESPAN:-$(jq -r '.sou
 OVEROPS_BASE_LINE_TIMESPAN=$(expand_param "${OVEROPS_BASE_LINE_TIMESPAN:-$(jq -r '.source.baseline_timespan | values' <<< $input)}")
 OVEROPS_MIN_VOLUME_THRESHOLD=$(expand_param "${OVEROPS_MIN_VOLUME_THRESHOLD:-$(jq -r '.source.min_volume_threshold | values' <<< $input)}")
 OVEROPS_MIN_ERROR_RATE_THRESHOLD=$(expand_param "${OVEROPS_MIN_ERROR_RATE_THRESHOLD:-$(jq -r '.source.min_error_rate_threshold | values' <<< $input)}")
-OVEROPS_REGRESSION_DELTA=$(expand_param "${OVEROPS_REGRESSION_DELTA:-$(jq -r '.source.regression_delta | values' <<< $input)}")
-OVEROPS_CRITICAL_REGRESSION_DELTA=$(expand_param "${OVEROPS_CRITICAL_REGRESSION_DELTA:-$(jq -r '.source.critical_regression_delta | values' <<< $input)}")
 OVEROPS_APPLY_SEASONALITY=$(expand_param "${OVEROPS_APPLY_SEASONALITY:-$(jq -r '.source.apply_seasonality | values' <<< $input)}")
+OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES=$(expand_param "${OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES:-$(jq -r '.source.show_events_for_passed_gates | values' <<< $input)}")
 OVEROPS_DEBUG=$(expand_param "${OVEROPS_DEBUG:-$(jq -r '.source.debug | values' <<< $input)}")
 
 # Use the application file and deployment file for the OVEROPS_APPLICATION_NAME and OVEROPS_DEPLOYMENT_NAME if it exists
@@ -105,9 +103,8 @@ java -jar /artifact/concourse-overops.jar \
     ${OVEROPS_BASE_LINE_TIMESPAN:+--baselineTimespan=$OVEROPS_BASE_LINE_TIMESPAN} \
     ${OVEROPS_MIN_VOLUME_THRESHOLD:+--minVolumeThreshold=$OVEROPS_MIN_VOLUME_THRESHOLD} \
     ${OVEROPS_MIN_ERROR_RATE_THRESHOLD:+--minErrorRateThreshold=$OVEROPS_MIN_ERROR_RATE_THRESHOLD} \
-    ${OVEROPS_REGRESSION_DELTA:+--regressionDelta=$OVEROPS_REGRESSION_DELTA} \
-    ${OVEROPS_CRITICAL_REGRESSION_DELTA:+--criticalRegressionDelta=$OVEROPS_CRITICAL_REGRESSION_DELTA} \
     ${OVEROPS_APPLY_SEASONALITY:+--applySeasonality=$OVEROPS_APPLY_SEASONALITY} \
+    ${OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES:+--showEventsForPassedGates=$OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES} \
     ${OVEROPS_DEBUG:+--debug=$OVEROPS_DEBUG} \
     ${OVEROPS_CHECK:+--checkVersion=$OVEROPS_CHECK}
 """

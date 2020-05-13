@@ -6,8 +6,6 @@ import com.overops.report.service.model.QualityGateTestResults.TestType;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import static com.overops.report.service.model.QualityGateTestResults.TestType.REGRESSION_EVENTS_TEST;
-
 public class EventYaml extends YamlObject {
     public EventYaml(String name) {
         super(name);
@@ -28,13 +26,8 @@ public class EventYaml extends YamlObject {
             map.put("Summary", event.getEventSummary());
             map.put("Applications", event.getApplications());
             map.put("Introduced by", event.getIntroducedBy());
-            if(REGRESSION_EVENTS_TEST.equals(type)) {
-                map.put("Volume / Rate", event.getEventRate());
-                map.put("Type", event.getType());
-            } else {
-                map.put("Volume", event.getEventRate());
-            }
             map.put("ARC Link", event.getArcLink());
+            map.put("Volume", event.getEventRate());
             
             simpleProperties.add(map);
         });
