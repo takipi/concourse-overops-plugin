@@ -35,11 +35,6 @@ OVEROPS_RESURFACED_ERRORS=$(jq -r '.params.resurfaced_errors | values' <<< $inpu
 OVEROPS_MAX_ERROR_VOLUME=$(jq -r '.params.max_error_volume | values' <<< $input)
 OVEROPS_MAX_UNIQUE_ERRORS=$(jq -r '.params.max_unique_errors | values' <<< $input)
 OVEROPS_CRITICAL_EXCEPTION_TYPES=$(jq -r '.params.critical_exception_types | values' <<< $input)
-OVEROPS_ACTIVE_TIMESPAN=$(jq -r '.params.active_timespan | values' <<< $input)
-OVEROPS_BASE_LINE_TIMESPAN=$(jq -r '.params.baseline_timespan | values' <<< $input)
-OVEROPS_MIN_VOLUME_THRESHOLD=$(jq -r '.params.min_volume_threshold | values' <<< $input)
-OVEROPS_MIN_ERROR_RATE_THRESHOLD=$(jq -r '.params.min_error_rate_threshold | values' <<< $input)
-OVEROPS_APPLY_SEASONALITY=$(jq -r '.params.apply_seasonality | values' <<< $input)
 OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES=$(jq -r '.params.show_events_for_passed_gates | values' <<< $input)
 OVEROPS_DEBUG=$(jq -r '.params.debug | values' <<< $input)
 
@@ -60,11 +55,6 @@ OVEROPS_RESURFACED_ERRORS=$(expand_param "${OVEROPS_RESURFACED_ERRORS:-$(jq -r '
 OVEROPS_MAX_ERROR_VOLUME=$(expand_param "${OVEROPS_MAX_ERROR_VOLUME:-$(jq -r '.source.max_error_volume | values' <<< $input)}")
 OVEROPS_MAX_UNIQUE_ERRORS=$(expand_param "${OVEROPS_MAX_UNIQUE_ERRORS:-$(jq -r '.source.max_unique_errors | values' <<< $input)}")
 OVEROPS_CRITICAL_EXCEPTION_TYPES=$(expand_param "${OVEROPS_CRITICAL_EXCEPTION_TYPES:-$(jq -r '.source.critical_exception_types | values' <<< $input)}")
-OVEROPS_ACTIVE_TIMESPAN=$(expand_param "${OVEROPS_ACTIVE_TIMESPAN:-$(jq -r '.source.active_timespan | values' <<< $input)}")
-OVEROPS_BASE_LINE_TIMESPAN=$(expand_param "${OVEROPS_BASE_LINE_TIMESPAN:-$(jq -r '.source.baseline_timespan | values' <<< $input)}")
-OVEROPS_MIN_VOLUME_THRESHOLD=$(expand_param "${OVEROPS_MIN_VOLUME_THRESHOLD:-$(jq -r '.source.min_volume_threshold | values' <<< $input)}")
-OVEROPS_MIN_ERROR_RATE_THRESHOLD=$(expand_param "${OVEROPS_MIN_ERROR_RATE_THRESHOLD:-$(jq -r '.source.min_error_rate_threshold | values' <<< $input)}")
-OVEROPS_APPLY_SEASONALITY=$(expand_param "${OVEROPS_APPLY_SEASONALITY:-$(jq -r '.source.apply_seasonality | values' <<< $input)}")
 OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES=$(expand_param "${OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES:-$(jq -r '.source.show_events_for_passed_gates | values' <<< $input)}")
 OVEROPS_DEBUG=$(expand_param "${OVEROPS_DEBUG:-$(jq -r '.source.debug | values' <<< $input)}")
 
@@ -99,11 +89,6 @@ java -jar /artifact/concourse-overops.jar \
     ${OVEROPS_MAX_ERROR_VOLUME:+--maxErrorVolume=$OVEROPS_MAX_ERROR_VOLUME} \
     ${OVEROPS_MAX_UNIQUE_ERRORS:+--maxUniqueErrors=$OVEROPS_MAX_UNIQUE_ERRORS} \
     ${OVEROPS_CRITICAL_EXCEPTION_TYPES:+--criticalExceptionTypes=$OVEROPS_CRITICAL_EXCEPTION_TYPES} \
-    ${OVEROPS_ACTIVE_TIMESPAN:+--activeTimespan=$OVEROPS_ACTIVE_TIMESPAN} \
-    ${OVEROPS_BASE_LINE_TIMESPAN:+--baselineTimespan=$OVEROPS_BASE_LINE_TIMESPAN} \
-    ${OVEROPS_MIN_VOLUME_THRESHOLD:+--minVolumeThreshold=$OVEROPS_MIN_VOLUME_THRESHOLD} \
-    ${OVEROPS_MIN_ERROR_RATE_THRESHOLD:+--minErrorRateThreshold=$OVEROPS_MIN_ERROR_RATE_THRESHOLD} \
-    ${OVEROPS_APPLY_SEASONALITY:+--applySeasonality=$OVEROPS_APPLY_SEASONALITY} \
     ${OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES:+--showEventsForPassedGates=$OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES} \
     ${OVEROPS_DEBUG:+--debug=$OVEROPS_DEBUG} \
     ${OVEROPS_CHECK:+--checkVersion=$OVEROPS_CHECK}

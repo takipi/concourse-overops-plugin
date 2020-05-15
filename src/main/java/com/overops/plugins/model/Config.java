@@ -32,11 +32,6 @@ public class Config {
         params.setMaxErrorVolume(Integer.parseInt(argsMap.getOrDefault("maxErrorVolume", "0")));
         params.setMaxUniqueErrors(Integer.parseInt(argsMap.getOrDefault("maxUniqueErrors", "0")));
         params.setCriticalExceptionTypes(argsMap.getOrDefault("criticalExceptionTypes", ""));
-        params.setActiveTimespan(argsMap.getOrDefault("activeTimespan", "0"));
-        params.setBaselineTimespan(argsMap.getOrDefault("baselineTimespan", "0"));
-        params.setMinVolumeThreshold(Integer.parseInt(argsMap.getOrDefault("minVolumeThreshold", "0")));
-        params.setMinErrorRateThreshold(Double.parseDouble(argsMap.getOrDefault("minErrorRateThreshold", "0")));
-        params.setApplySeasonality(Boolean.parseBoolean(argsMap.getOrDefault("applySeasonality", "false")));
 
         reportParams = params;
         overOpsURL = argsMap.get("overOpsURL");
