@@ -82,23 +82,19 @@ max_error_volume  | false | 0     | Set the max total error volume allowed. If e
 max_unique_errors | false | 0     | Set the max total error volume allowed. If exceeded the build will be marked as failed
 critical_exception_types | false | | A comma delimited list of exception types that are deemed as severe regardless of their volume.<br>- If any events of any exceptions listed have a count greater than zero, the build will be marked as unstable. Blank to skip this test.<br>*(For example: `NullPointerException,IndexOutOfBoundsException`)*
 show_events_for_passed_gates | false | false | Display events for the quality gates even if the the gates passed.
+pass_build_on_exception | false | false | Determines if the build should pass if there are exception/exceptions.
 debug | false | false | For advanced debugging purposes only
 
 ## ARC Links
-
 The ARC Links inside of the UI display after a build with the OverOps resource are not clickable they must be copy and pasted to be used.
 
 ## Behavior
 
 ### `check`
-
 no-op
 
 ### `out`
-
 Generates the report based on OverOps events, if `mark_unstable` is set to `true` then it fails the build, until reported issues are fixed.
 
 ### `in`
-
 no-op
-

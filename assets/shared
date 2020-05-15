@@ -36,6 +36,7 @@ OVEROPS_MAX_ERROR_VOLUME=$(jq -r '.params.max_error_volume | values' <<< $input)
 OVEROPS_MAX_UNIQUE_ERRORS=$(jq -r '.params.max_unique_errors | values' <<< $input)
 OVEROPS_CRITICAL_EXCEPTION_TYPES=$(jq -r '.params.critical_exception_types | values' <<< $input)
 OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES=$(jq -r '.params.show_events_for_passed_gates | values' <<< $input)
+OVEROPS_PASS_BUILD_ON_EXCEPTION=$(jq -r '.params.pass_build_on_exception | values' <<< $input)
 OVEROPS_DEBUG=$(jq -r '.params.debug | values' <<< $input)
 
 # Set global level parameters, if the local level ones where not set
@@ -56,6 +57,7 @@ OVEROPS_MAX_ERROR_VOLUME=$(expand_param "${OVEROPS_MAX_ERROR_VOLUME:-$(jq -r '.s
 OVEROPS_MAX_UNIQUE_ERRORS=$(expand_param "${OVEROPS_MAX_UNIQUE_ERRORS:-$(jq -r '.source.max_unique_errors | values' <<< $input)}")
 OVEROPS_CRITICAL_EXCEPTION_TYPES=$(expand_param "${OVEROPS_CRITICAL_EXCEPTION_TYPES:-$(jq -r '.source.critical_exception_types | values' <<< $input)}")
 OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES=$(expand_param "${OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES:-$(jq -r '.source.show_events_for_passed_gates | values' <<< $input)}")
+OVEROPS_PASS_BUILD_ON_EXCEPTION=$(expand_param "${OVEROPS_PASS_BUILD_ON_EXCEPTION:-$(jq -r '.source.pass_build_on_exception | values' <<< $input)}")
 OVEROPS_DEBUG=$(expand_param "${OVEROPS_DEBUG:-$(jq -r '.source.debug | values' <<< $input)}")
 
 # Use the application file and deployment file for the OVEROPS_APPLICATION_NAME and OVEROPS_DEPLOYMENT_NAME if it exists
@@ -90,6 +92,7 @@ java -jar /artifact/concourse-overops.jar \
     ${OVEROPS_MAX_UNIQUE_ERRORS:+--maxUniqueErrors=$OVEROPS_MAX_UNIQUE_ERRORS} \
     ${OVEROPS_CRITICAL_EXCEPTION_TYPES:+--criticalExceptionTypes=$OVEROPS_CRITICAL_EXCEPTION_TYPES} \
     ${OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES:+--showEventsForPassedGates=$OVEROPS_SHOW_EVENTS_FOR_PASSED_GATES} \
+    ${OVEROPS_PASS_BUILD_ON_EXCEPTION:+--passBuildOnException=$OVEROPS_PASS_BUILD_ON_EXCEPTION} \
     ${OVEROPS_DEBUG:+--debug=$OVEROPS_DEBUG} \
     ${OVEROPS_CHECK:+--checkVersion=$OVEROPS_CHECK}
 """

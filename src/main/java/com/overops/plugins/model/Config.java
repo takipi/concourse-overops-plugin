@@ -15,6 +15,7 @@ public class Config {
     private String serviceId;
     private QualityReportParams reportParams;
     private boolean showEventsForPassedGates;
+    private boolean passBuildOnException;
     private boolean debug;
 
     public Config(String[] args) {
@@ -39,6 +40,7 @@ public class Config {
         overOpsAPIKey = argsMap.get("overOpsAPIKey");
         serviceId = argsMap.getOrDefault("serviceId", overOpsSID);
         showEventsForPassedGates = Boolean.parseBoolean(argsMap.getOrDefault("showEventsForPassedGates", "false"));
+        passBuildOnException = Boolean.parseBoolean(argsMap.getOrDefault("passBuildOnException", "false"));
         debug = Boolean.parseBoolean(argsMap.getOrDefault("debug", "false"));
     }
 
@@ -74,6 +76,11 @@ public class Config {
     
     public boolean isShowEventsForPassedGates() {
         return showEventsForPassedGates;
+    }
+    
+    public boolean isPassBuildOnException()
+    {
+        return passBuildOnException;
     }
     
     public boolean isDebug() {

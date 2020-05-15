@@ -27,7 +27,7 @@ public class EventYaml extends YamlObject {
             map.put("Applications", event.getApplications());
             map.put("Introduced by", event.getIntroducedBy());
             map.put("ARC Link", event.getArcLink());
-            map.put("Volume", event.getEventRate());
+            map.put("Volume", Long.toString(event.getHits()));
             
             simpleProperties.add(map);
         });
