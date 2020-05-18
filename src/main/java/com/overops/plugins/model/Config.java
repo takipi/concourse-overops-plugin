@@ -2,7 +2,6 @@ package com.overops.plugins.model;
 
 import com.overops.report.service.QualityReportParams;
 import com.takipi.common.util.Pair;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.Map;
