@@ -11,12 +11,12 @@ public class EventYaml extends YamlObject {
         super(name);
     }
 
-    public EventYaml(List<QualityGateEvent> list, TestType type) {
+    public EventYaml(List<QualityGateEvent> list) {
         super("Events");
-        addList(list, type);
+        addList(list);
     }
 
-    public void addList(List<QualityGateEvent> list, TestType type) {
+    public void addList(List<QualityGateEvent> list) {
         if (list == null) {
             return;
         }
