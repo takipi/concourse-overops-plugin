@@ -75,7 +75,7 @@ deployment_name  | false | --- | Use this parameter if the deployement_name will
 deployment_file  | false | --- | Use this parameter if the deployement_name will be read from a file (dynamic). This parameter will overwrite the deployment_name parameter if defined. [Deployment Name](https://doc.overops.com/docs/naming-your-application-server-deployment) as specified in OverOps
 regex_filter     | false | | A way to filter out specific event types from affecting the outcome of the OverOps Reliability report.
 mark_unstable    | false | false | If set to `true` the build will be failed if any of the above gates are met
-print_top_issues  | false | 5 | Prints the top X events (as provided by this parameter) with the highest volume of errors detected within the active time window, This is useful when used in conjunction with Max Error Volume to identify the errors which caused a build to fail
+print_top_issues  | false | 5 | Prints the top X events (as provided by this parameter) with the highest volume of errors detected in the build. This is used in conjunction with Max Error Volume and Max Unique Errors to identify the errors which caused a build to fail
 new_events       | false | false | If any new errors is detected, the build will be marked as failed
 resurfaced_errors| false | false | If any resurfaced errors is detected, the build will be marked as failed
 max_error_volume  | false | 0     | Set the max total error volume allowed. If exceeded the build will be marked as failed
