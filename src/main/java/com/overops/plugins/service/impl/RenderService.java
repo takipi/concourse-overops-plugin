@@ -10,7 +10,6 @@ import com.overops.report.service.model.QualityReport;
 import org.fusesource.jansi.Ansi;
 import com.overops.plugins.service.OutputWriter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -38,15 +37,8 @@ public class RenderService extends Render {
 
         printQualityGateSection(qualityReport.getNewErrorsTestResults());
         printQualityGateSection(qualityReport.getResurfacedErrorsTestResults());
-
-        // Only display 1 table of events if both Total and Unique are selected
-        // to be displayed. If both are selected, the events are displayed under Unique
-        printQualityGateHeader(qualityReport.getTotalErrorsTestResults());
-        printQualityGateHeader(qualityReport.getUniqueErrorsTestResults());
-        printTotalUniqueGateEvents(qualityReport.getTotalErrorsTestResults(),
-            qualityReport.getUniqueErrorsTestResults());
-
-        // Back to normal printing ;)
+        printQualityGateSection(qualityReport.getTotalErrorsTestResults());
+        printQualityGateSection(qualityReport.getUniqueErrorsTestResults());
         printQualityGateSection(qualityReport.getCriticalErrorsTestResults());
 
         return this;
@@ -74,7 +66,13 @@ public class RenderService extends Render {
     private void printQualityGateSection(QualityGateTestResults qualityGate) {
         if(qualityGate != null) {
             printQualityGateHeader(qualityGate);
-            printQualityGateEvents(qualityGate.getEvents(), qualityGate.isPassed());
+
+            List<QualityGateEvent> events = qualityGate.getEvents();
+            if(UNIQUE_EVENTS_TEST.equals(qualityGate.getTestType()) || TOTAL_EVENTS_TEST.equals(qualityGate.getTestType())) {
+                events = getTopEvents();
+            }
+
+            printQualityGateEvents(events, qualityGate.isPassed());
 
             printSeparator();
         }
@@ -84,24 +82,6 @@ public class RenderService extends Render {
         if(qualityGate != null) {
             outputStream.printStatementHeaders(qualityGate.getMessage());
         }
-    }
-
-    private void printTotalUniqueGateEvents(QualityGateTestResults totalGate, QualityGateTestResults uniqueGate) {
-        boolean isPassed = true;
-        List<QualityGateEvent> events = new ArrayList<>();
-
-        if(totalGate != null) {
-            isPassed = totalGate.isPassed();
-            events = qualityReport.getTopEvents();
-        }
-
-        if(uniqueGate != null) {
-            isPassed &= uniqueGate.isPassed();
-            events = qualityReport.getTopEvents();
-        }
-
-        printQualityGateEvents(events, isPassed);
-        printSeparator();
     }
 
     private void printQualityGateEvents(List<QualityGateEvent> events, boolean isPassed) {
