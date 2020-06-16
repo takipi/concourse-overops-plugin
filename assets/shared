@@ -20,6 +20,7 @@ input=$(cat) # read stdin JSON provided by Concourse
 
 # Set parameters from the job level
 OVEROPS_URL=$(jq -r '.params.overops_url | values' <<< $input)
+OVEROPS_APP_URL=$(jq -r '.params.overops_app_url | values' <<< $input)
 OVEROPS_SID=$(jq -r '.params.overops_sid | values' <<< $input)
 OVEROPS_API_KEY=$(jq -r '.params.overops_api_key | values' <<< $input)
 OVEROPS_APPLICATION_NAME=$(jq -r '.params.application_name | values' <<< $input)
@@ -29,6 +30,7 @@ OVEROPS_DEPLOYMENT_FILE=$(jq -r '.params.deployment_file | values' <<< $input)
 OVEROPS_SERVICE_ID=$(jq -r '.params.service_id | values' <<< $input)
 OVEROPS_REGEX_FILTER=$(jq -r '.params.regex_filter | values' <<< $input)
 OVEROPS_MARK_UNSTABLE=$(jq -r '.params.mark_unstable | values' <<< $input)
+OVEROPS_LINK=$(jq -r '.params.link | values' <<< $input)
 OVEROPS_PRINT_TOP_ISSUES=$(jq -r '.params.print_top_issues | values' <<< $input)
 OVEROPS_NEW_EVENTS=$(jq -r '.params.new_events | values' <<< $input)
 OVEROPS_RESURFACED_ERRORS=$(jq -r '.params.resurfaced_errors | values' <<< $input)
@@ -41,6 +43,7 @@ OVEROPS_DEBUG=$(jq -r '.params.debug | values' <<< $input)
 
 # Set global level parameters, if the local level ones where not set
 OVEROPS_URL=$(expand_param "${OVEROPS_URL:-$(jq -r '.source.overops_url | values' <<< $input)}")
+OVEROPS_APP_URL=$(expand_param "${OVEROPS_APP_URL:-$(jq -r '.source.overops_app_url | values' <<< $input)}")
 OVEROPS_SID=$(expand_param "${OVEROPS_SID:-$(jq -r '.source.overops_sid | values' <<< $input)}")
 OVEROPS_API_KEY=$(expand_param "${OVEROPS_API_KEY:-$(jq -r '.source.overops_api_key | values' <<< $input)}")
 OVEROPS_APPLICATION_NAME=$(expand_param "${OVEROPS_APPLICATION_NAME:-$(jq -r '.source.application_name | values' <<< $input)}")
@@ -50,6 +53,7 @@ OVEROPS_DEPLOYMENT_FILE=$(expand_param "${OVEROPS_DEPLOYMENT_FILE:-$(jq -r '.sou
 OVEROPS_SERVICE_ID=$(expand_param "${OVEROPS_SERVICE_ID:-$(jq -r '.source.service_id | values' <<< $input)}")
 OVEROPS_REGEX_FILTER=$(expand_param "${OVEROPS_REGEX_FILTER:-$(jq -r '.source.regex_filter | values' <<< $input)}")
 OVEROPS_MARK_UNSTABLE=$(expand_param "${OVEROPS_MARK_UNSTABLE:-$(jq -r '.source.mark_unstable | values' <<< $input)}")
+OVEROPS_LINK=$(expand_param "${OVEROPS_LINK:-$(jq -r '.source.link | values' <<< $input)}")
 OVEROPS_PRINT_TOP_ISSUES=$(expand_param "${OVEROPS_PRINT_TOP_ISSUES:-$(jq -r '.source.print_top_issues | values' <<< $input)}")
 OVEROPS_NEW_EVENTS=$(expand_param "${OVEROPS_NEW_EVENTS:-$(jq -r '.source.new_events | values' <<< $input)}")
 OVEROPS_RESURFACED_ERRORS=$(expand_param "${OVEROPS_RESURFACED_ERRORS:-$(jq -r '.source.resurfaced_errors | values' <<< $input)}")
@@ -78,6 +82,7 @@ fi
 cmd="""
 java -jar /artifact/concourse-overops.jar \
     ${OVEROPS_URL:+--overOpsURL=$OVEROPS_URL} \
+    ${OVEROPS_APP_URL:+--overOpsAppURL=$OVEROPS_APP_URL} \
     ${OVEROPS_SID:+--overOpsSID=$OVEROPS_SID} \
     ${OVEROPS_API_KEY:+--overOpsAPIKey=$OVEROPS_API_KEY} \
     ${OVEROPS_APPLICATION_NAME:+--applicationName=$OVEROPS_APPLICATION_NAME} \
@@ -85,6 +90,7 @@ java -jar /artifact/concourse-overops.jar \
     ${OVEROPS_SERVICE_ID:+--serviceId=$OVEROPS_SERVICE_ID} \
     ${OVEROPS_REGEX_FILTER:+--regexFilter=$OVEROPS_REGEX_FILTER} \
     ${OVEROPS_MARK_UNSTABLE:+--markUnstable=$OVEROPS_MARK_UNSTABLE} \
+    ${OVEROPS_LINK:+--overOpsLink=$OVEROPS_LINK} \
     ${OVEROPS_PRINT_TOP_ISSUES:+--printTopIssues=$OVEROPS_PRINT_TOP_ISSUES} \
     ${OVEROPS_NEW_EVENTS:+--newEvents=$OVEROPS_NEW_EVENTS} \
     ${OVEROPS_RESURFACED_ERRORS:+--resurfacedErrors=$OVEROPS_RESURFACED_ERRORS} \

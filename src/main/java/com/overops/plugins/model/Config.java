@@ -9,12 +9,14 @@ import java.util.stream.Collectors;
 
 public class Config {
     private String overOpsURL;
+    private String overOpsAppURL;
     private String overOpsSID;
     private String overOpsAPIKey;
     private String serviceId;
     private QualityReportParams reportParams;
     private boolean showEventsForPassedGates;
     private boolean passBuildOnException;
+    private boolean useLink;
     private boolean debug;
 
     public Config(String[] args) {
@@ -40,6 +42,8 @@ public class Config {
         serviceId = argsMap.getOrDefault("serviceId", overOpsSID);
         showEventsForPassedGates = Boolean.parseBoolean(argsMap.getOrDefault("showEventsForPassedGates", "false"));
         passBuildOnException = Boolean.parseBoolean(argsMap.getOrDefault("passBuildOnException", "false"));
+        useLink = Boolean.parseBoolean(argsMap.getOrDefault("overOpsLink", "false"));
+        overOpsAppURL = argsMap.get("overOpsAppURL");
         debug = Boolean.parseBoolean(argsMap.getOrDefault("debug", "false"));
     }
 
@@ -55,6 +59,10 @@ public class Config {
 
     public String getOverOpsURL() {
         return overOpsURL;
+    }
+
+    public String getOverOpsAppURL() {
+        return overOpsAppURL;
     }
 
     public String getOverOpsSID() {
@@ -76,7 +84,12 @@ public class Config {
     public boolean isShowEventsForPassedGates() {
         return showEventsForPassedGates;
     }
-    
+
+    public boolean isUseLink()
+    {
+        return useLink;
+    }
+
     public boolean isPassBuildOnException()
     {
         return passBuildOnException;

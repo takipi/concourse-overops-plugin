@@ -2,6 +2,7 @@ package com.overops.plugins;
 
 import com.overops.plugins.model.Context;
 import com.overops.plugins.model.Config;
+import com.overops.plugins.service.impl.RenderLinkService;
 import com.overops.plugins.service.impl.RenderService;
 import com.overops.report.service.ReportService;
 import com.overops.report.service.model.QualityReport;
@@ -25,26 +26,39 @@ public class Plugin {
         try {
             Config config = new Config(args);
             try {
-                QualityReport qualityReport = new ReportService().runQualityReport(
+                ReportService reportService = new ReportService();
+                if (config.isUseLink())
+                {
+                    String reportLink = reportService.generateReportLink(config.getOverOpsAppURL(), config.getReportParams());
+                    new RenderLinkService(reportLink).render();
+                    status = 0;
+                } else
+                {
+                    reportService.pauseForTheCause(context.getOutputStream().getPrintStream());
+                    QualityReport qualityReport = reportService.runQualityReport(
                         config.getOverOpsURL(), config.getOverOpsAPIKey(),
                         config.getReportParams(), ReportService.Requestor.CONCOURSE,
                         context.getOutputStream().getPrintStream(), config.isDebug());
-    
-    
-                QualityReportExceptionDetails exceptionDetails = qualityReport.getExceptionDetails();
-                if(exceptionDetails == null) {
-                    new RenderService(qualityReport, config.isShowEventsForPassedGates()).render();
-                } else {
-                    context.getOutputStream().println("OverOps was unable to generate a Quality Report.", Ansi.Color.WHITE);
-                    context.getOutputStream().printlnError(exceptionDetails.getExceptionMessage());
-                    Stream.of(exceptionDetails.getStackTrace()).forEachOrdered(
+
+
+                    QualityReportExceptionDetails exceptionDetails = qualityReport.getExceptionDetails();
+                    if (exceptionDetails == null)
+                    {
+                        new RenderService(qualityReport, config.isShowEventsForPassedGates()).render();
+                    }
+                    else
+                    {
+                        context.getOutputStream().println("OverOps was unable to generate a Quality Report.", Ansi.Color.WHITE);
+                        context.getOutputStream().printlnError(exceptionDetails.getExceptionMessage());
+                        Stream.of(exceptionDetails.getStackTrace()).forEachOrdered(
                             trace -> context.getOutputStream().println(trace, Ansi.Color.WHITE)
-                    );
+                        );
+                    }
+
+                    // Check to make build stable or not
+                    boolean hasExceptions = exceptionDetails != null;
+                    status = calculateStatus(qualityReport.getStatusCode(), hasExceptions, config.isPassBuildOnException());
                 }
-    
-                // Check to make build stable or not
-                boolean hasExceptions = exceptionDetails != null;
-                status = calculateStatus(qualityReport.getStatusCode(), hasExceptions, config.isPassBuildOnException());
             } catch(Exception e) {
                 // Report failed to be generated
                 context.getOutputStream().println("OverOps was unable to generate a Quality Report.", Ansi.Color.WHITE);
