@@ -22,7 +22,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <fileName>concourse-overops</fileName>
     <version.takipi>2.34.0</version.takipi>
-    <version.fasterxml>2.10.1</version.fasterxml>
+    <version.fasterxml>2.12.6.1</version.fasterxml>
     <version.jansi>1.18</version.jansi>
     <version.commons-collections>4.4</version.commons-collections>
     <version.junit>4.11</version.junit>
